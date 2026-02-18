@@ -22,6 +22,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { useCreateEvent, useUpdateEvent } from '@/hooks/useEvents'
+import { MediaPicker } from '@/components/shared/MediaPicker'
 
 const eventSchema = z.object({
   name: z.string().min(1, 'Name is required').max(255),
@@ -186,9 +187,15 @@ export function EventForm({ open, onOpenChange, event }) {
               name="banner_media_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Banner Media ID</FormLabel>
+                  <FormLabel>Banner</FormLabel>
                   <FormControl>
-                    <Input placeholder="UUID (optional)" {...field} />
+                    <MediaPicker
+                      value={field.value}
+                      onChange={field.onChange}
+                      mediaType="event_banner"
+                      label="Banner"
+                      existingUrl={event?.banner?.url}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

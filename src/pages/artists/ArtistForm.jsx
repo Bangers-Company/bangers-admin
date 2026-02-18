@@ -22,6 +22,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { useCreateArtist, useUpdateArtist } from '@/hooks/useArtists'
+import { MediaPicker } from '@/components/shared/MediaPicker'
 
 const artistSchema = z.object({
   name: z.string().min(1, 'Name is required').max(255),
@@ -140,9 +141,15 @@ export function ArtistForm({ open, onOpenChange, artist }) {
               name="image_media_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Image Media ID</FormLabel>
+                  <FormLabel>Image</FormLabel>
                   <FormControl>
-                    <Input placeholder="UUID (optional)" {...field} />
+                    <MediaPicker
+                      value={field.value}
+                      onChange={field.onChange}
+                      mediaType="artist_image"
+                      label="Image"
+                      existingUrl={artist?.image?.url}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
