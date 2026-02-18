@@ -153,6 +153,19 @@ export default function EventsPage() {
         filterColumn="name"
         filterPlaceholder="Filter events..."
         isLoading={isLoading}
+        emptyState={
+          <div className="flex flex-col items-center gap-2 py-4">
+            <p className="text-muted-foreground">No events yet.</p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { setEditingEvent(null); setFormOpen(true) }}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Create your first event
+            </Button>
+          </div>
+        }
       />
       <EventForm
         open={formOpen}

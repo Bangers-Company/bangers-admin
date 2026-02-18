@@ -122,6 +122,19 @@ export default function StagesPage() {
         filterColumn="name"
         filterPlaceholder="Filter stages..."
         isLoading={isLoading}
+        emptyState={
+          <div className="flex flex-col items-center gap-2 py-4">
+            <p className="text-muted-foreground">No stages yet.</p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { setEditingStage(null); setFormOpen(true) }}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Create your first stage
+            </Button>
+          </div>
+        }
       />
       <StageForm
         open={formOpen}

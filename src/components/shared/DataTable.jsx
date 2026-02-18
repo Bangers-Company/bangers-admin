@@ -28,6 +28,7 @@ export function DataTable({
   filterColumn,
   filterPlaceholder = 'Filter...',
   isLoading = false,
+  emptyState,
 }) {
   const [sorting, setSorting] = useState([])
   const [columnFilters, setColumnFilters] = useState([])
@@ -63,7 +64,7 @@ export function DataTable({
           />
         </div>
       )}
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -109,9 +110,11 @@ export function DataTable({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="h-24 text-center"
+                  className="h-48 text-center"
                 >
-                  No results found.
+                  {emptyState || (
+                    <p className="text-muted-foreground">No results found.</p>
+                  )}
                 </TableCell>
               </TableRow>
             )}

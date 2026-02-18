@@ -161,6 +161,19 @@ export default function ActsPage() {
         filterColumn="name"
         filterPlaceholder="Filter acts..."
         isLoading={isLoading}
+        emptyState={
+          <div className="flex flex-col items-center gap-2 py-4">
+            <p className="text-muted-foreground">No acts yet.</p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { setEditingAct(null); setFormOpen(true) }}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Create your first act
+            </Button>
+          </div>
+        }
       />
       <ActForm
         open={formOpen}
