@@ -1,3 +1,202 @@
+import { useState, useEffect } from 'react'
+import { toast } from 'sonner'
+import { Plus, MoreHorizontal } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { DataTable, SortableHeader } from '@/components/shared/DataTable'
+import { DeleteDialog } from '@/components/shared/DeleteDialog'
+import { PageHeader } from '@/components/shared/PageHeader'
+import { ActForm } from './ActForm'
+import { ActArtistsDialog } from './ActArtistsDialog'
+import { ActStagesDialog } from './ActStagesDialog'
+import { useActs, useDeleteAct } from '@/hooks/useActs'
+
 export default function ActsPage() {
-  return <h1 className="text-2xl font-bold">Acts</h1>
+  const [page, setPage] = useState(0)
+  const [formOpen, setFormOpen] = useState(false)
+  const [editingAct, setEditingAct] = useState(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deletingAct, setDeletingAct] = useState(null)
+  const [artistsDialogOpen, setArtistsDialogOpen] = useState(false)
+  const [artistsAct, setArtistsAct] = useState(null)
+  const [stagesDialogOpen, setStagesDialogOpen] = useState(false)
+  const [stagesAct, setStagesAct] = useState(null)
+
+  const { data, isLoading } = useActs(page + 1)
+  const deleteAct = useDeleteAct()
+
+  useEffect(() => { document.title = 'Acts — Bangers Admin' }, [])
+
+  const acts = data?.data || []
+  const meta = data?.meta || {}
+
+  const columns = [
+    {
+      accessorKey: 'name',
+      header: ({ column }) => <SortableHeader column={column}>Name</SortableHeader>,
+    },
+    {
+      accessorKey: 'description',
+      header: 'Description',
+      cell: ({ row }) => {
+        const desc = row.original.description
+        if (!desc) return '—'
+        return desc.length > 50 ? desc.slice(0, 50) + '...' : desc
+      },
+    },
+    {
+      id: 'artists',
+      header: 'Artists',
+      cell: ({ row }) => (
+        <Badge variant="secondary">
+          {row.original.artists?.length || 0}
+        </Badge>
+      ),
+    },
+    {
+      id: 'stages',
+      header: 'Stages',
+      cell: ({ row }) => (
+        <Badge variant="secondary">
+          {row.original.stages?.length || 0}
+        </Badge>
+      ),
+    },
+    {
+      id: 'actions',
+      header: '',
+      cell: ({ row }) => {
+        const act = row.original
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => {
+                  setEditingAct(act)
+                  setFormOpen(true)
+                }}
+              >
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => {
+                  setArtistsAct(act)
+                  setArtistsDialogOpen(true)
+                }}
+              >
+                Manage Artists
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  setStagesAct(act)
+                  setStagesDialogOpen(true)
+                }}
+              >
+                Manage Stages
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={() => {
+                  setDeletingAct(act)
+                  setDeleteDialogOpen(true)
+                }}
+              >
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )
+      },
+    },
+  ]
+
+  async function handleDelete() {
+    try {
+      await deleteAct.mutateAsync(deletingAct.id)
+      toast.success('Act deleted')
+      setDeleteDialogOpen(false)
+      setDeletingAct(null)
+    } catch (error) {
+      toast.error(error.message || 'Failed to delete act')
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Acts"
+        description="Manage acts and performances"
+        action={
+          <Button
+            onClick={() => {
+              setEditingAct(null)
+              setFormOpen(true)
+            }}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Create Act
+          </Button>
+        }
+      />
+      <DataTable
+        columns={columns}
+        data={acts}
+        pageCount={meta.last_page || 0}
+        pageIndex={page}
+        onPageChange={setPage}
+        filterColumn="name"
+        filterPlaceholder="Filter acts..."
+        isLoading={isLoading}
+      />
+      <ActForm
+        open={formOpen}
+        onOpenChange={(open) => {
+          setFormOpen(open)
+          if (!open) setEditingAct(null)
+        }}
+        act={editingAct}
+      />
+      <ActArtistsDialog
+        open={artistsDialogOpen}
+        onOpenChange={(open) => {
+          setArtistsDialogOpen(open)
+          if (!open) setArtistsAct(null)
+        }}
+        act={artistsAct}
+      />
+      <ActStagesDialog
+        open={stagesDialogOpen}
+        onOpenChange={(open) => {
+          setStagesDialogOpen(open)
+          if (!open) setStagesAct(null)
+        }}
+        act={stagesAct}
+      />
+      <DeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          setDeleteDialogOpen(open)
+          if (!open) setDeletingAct(null)
+        }}
+        onConfirm={handleDelete}
+        title="Delete Act"
+        description={`Are you sure you want to delete "${deletingAct?.name}"? This action cannot be undone.`}
+        isDeleting={deleteAct.isPending}
+      />
+    </div>
+  )
 }
