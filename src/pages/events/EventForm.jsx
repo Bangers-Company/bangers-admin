@@ -106,9 +106,19 @@ export function EventForm({ open, onOpenChange, event }) {
   }
 
   const isPending = createEvent.isPending || updateEvent.isPending
+  const { isDirty } = form.formState
+
+  function handleOpenChange(open) {
+    if (!open && isDirty) {
+      if (!window.confirm('You have unsaved changes. Are you sure you want to close?')) {
+        return
+      }
+    }
+    onOpenChange(open)
+  }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edit Event' : 'Create Event'}</DialogTitle>
@@ -122,7 +132,7 @@ export function EventForm({ open, onOpenChange, event }) {
                 <FormItem>
                   <FormLabel>Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Event name" {...field} />
+                    <Input placeholder="Event name" autoFocus {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -205,7 +215,7 @@ export function EventForm({ open, onOpenChange, event }) {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => onOpenChange(false)}
+                onClick={() => handleOpenChange(false)}
               >
                 Cancel
               </Button>

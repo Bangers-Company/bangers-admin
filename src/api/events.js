@@ -1,7 +1,9 @@
 import { apiClient } from './client'
 
-export function getEvents(page = 1) {
-  return apiClient.get('/events', { page })
+export function getEvents(page = 1, perPage) {
+  const params = { page }
+  if (perPage) params.per_page = perPage
+  return apiClient.get('/events', params)
 }
 
 export function getEvent(id) {

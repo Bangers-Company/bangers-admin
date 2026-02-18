@@ -6,6 +6,7 @@ import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
 import { AppSidebar } from './AppSidebar'
+import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { CommandPalette } from '@/components/shared/CommandPalette'
 
 export default function AppLayout() {
@@ -29,7 +30,7 @@ export default function AppLayout() {
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 h-4" />
-          <span className="text-sm font-medium text-muted-foreground">Bangers Admin</span>
+          <Breadcrumbs />
           <div className="ml-auto">
             <Button
               variant="outline"

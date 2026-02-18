@@ -76,9 +76,19 @@ export function ActForm({ open, onOpenChange, act }) {
   }
 
   const isPending = createAct.isPending || updateAct.isPending
+  const { isDirty } = form.formState
+
+  function handleOpenChange(open) {
+    if (!open && isDirty) {
+      if (!window.confirm('You have unsaved changes. Are you sure you want to close?')) {
+        return
+      }
+    }
+    onOpenChange(open)
+  }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edit Act' : 'Create Act'}</DialogTitle>
@@ -92,7 +102,7 @@ export function ActForm({ open, onOpenChange, act }) {
                 <FormItem>
                   <FormLabel>Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Act name" {...field} />
+                    <Input placeholder="Act name" autoFocus {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -115,7 +125,7 @@ export function ActForm({ open, onOpenChange, act }) {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => onOpenChange(false)}
+                onClick={() => handleOpenChange(false)}
               >
                 Cancel
               </Button>

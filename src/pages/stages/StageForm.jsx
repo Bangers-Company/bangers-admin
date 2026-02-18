@@ -48,7 +48,7 @@ export function StageForm({ open, onOpenChange, stage }) {
   const isEditing = !!stage
   const [eventComboboxOpen, setEventComboboxOpen] = useState(false)
 
-  const { data: eventsData } = useEvents(1)
+  const { data: eventsData } = useEvents(1, 100)
   const createStage = useCreateStage()
   const updateStage = useUpdateStage()
 
@@ -99,11 +99,21 @@ export function StageForm({ open, onOpenChange, stage }) {
   }
 
   const isPending = createStage.isPending || updateStage.isPending
+  const { isDirty } = form.formState
   const selectedEventId = form.watch('event_id')
   const selectedEvent = events.find((e) => e.id === selectedEventId)
 
+  function handleOpenChange(open) {
+    if (!open && isDirty) {
+      if (!window.confirm('You have unsaved changes. Are you sure you want to close?')) {
+        return
+      }
+    }
+    onOpenChange(open)
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edit Stage' : 'Create Stage'}</DialogTitle>
@@ -175,7 +185,7 @@ export function StageForm({ open, onOpenChange, stage }) {
                 <FormItem>
                   <FormLabel>Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Stage name" {...field} />
+                    <Input placeholder="Stage name" autoFocus {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -198,7 +208,7 @@ export function StageForm({ open, onOpenChange, stage }) {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => onOpenChange(false)}
+                onClick={() => handleOpenChange(false)}
               >
                 Cancel
               </Button>

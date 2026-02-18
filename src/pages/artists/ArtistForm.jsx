@@ -88,9 +88,19 @@ export function ArtistForm({ open, onOpenChange, artist }) {
   }
 
   const isPending = createArtist.isPending || updateArtist.isPending
+  const { isDirty } = form.formState
+
+  function handleOpenChange(open) {
+    if (!open && isDirty) {
+      if (!window.confirm('You have unsaved changes. Are you sure you want to close?')) {
+        return
+      }
+    }
+    onOpenChange(open)
+  }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edit Artist' : 'Create Artist'}</DialogTitle>
@@ -104,7 +114,7 @@ export function ArtistForm({ open, onOpenChange, artist }) {
                 <FormItem>
                   <FormLabel>Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Artist name" {...field} />
+                    <Input placeholder="Artist name" autoFocus {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -159,7 +169,7 @@ export function ArtistForm({ open, onOpenChange, artist }) {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => onOpenChange(false)}
+                onClick={() => handleOpenChange(false)}
               >
                 Cancel
               </Button>
