@@ -54,6 +54,7 @@ src/
 **Auth**: None currently (prepare for future Authorization header)
 **IDs**: All UUIDs
 **Pagination**: 15 items/page default, Laravel-style `{ data: [], meta: { current_page, last_page, per_page, total }, links: {} }`
+**Eager loading on list endpoints**: Events include stages + banner, Artists include acts + image, Acts include artists + stages, Stages include event. Relations are available on BOTH list and show endpoints.
 **Deletes**: Soft deletes, returns 204 No Content
 **Errors**: 422 with `{ field: ["message"] }` format
 
@@ -69,7 +70,7 @@ src/
 - Relations: many-to-many Artists, many-to-many Stages
 
 **Stage**: `id, event_id, name, description?, version, created_at, updated_at`
-- Relations: belongs to Event, many-to-many Acts
+- Relations: belongs to Event (included as `event` object on list+show), many-to-many Acts
 
 **Media**: `id, type ("profile_picture"|"artist_image"|"event_banner"), url, mime_type?, size_bytes?, width?, height?, metadata?, is_public, created_at`
 
@@ -81,7 +82,7 @@ src/
 | Artists  | /artists  | /artists      | /artists/{id} | /artists/{id} | /artists/{id} |
 | Acts     | /acts     | /acts         | /acts/{id} | /acts/{id} | /acts/{id} |
 | Stages   | /stages   | /stages       | /stages/{id} | /stages/{id} | /stages/{id} |
-| Media    | —         | /media (multipart) | /media/{id} | — | /media/{id} |
+| Media    | /media    | /media (multipart) | /media/{id} | — | /media/{id} |
 | Search   | /search?query=&date=&location=&entities= | — | — | — | — |
 
 **Relationship endpoints (on Acts)**:

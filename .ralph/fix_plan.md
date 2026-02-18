@@ -1,9 +1,9 @@
 # Ralph Fix Plan — Bangers Admin Portal
 
 ## Phase 0: Project Scaffolding & Configuration
-- [ ] Initialize Vite + React project (`npm create vite@latest . -- --template react`)
+- [ ] Initialize Vite + React project (`npm create vite@latest . -- --template react --force`) — MUST use --force since directory has existing files. After scaffolding, verify CLAUDE.md/PLAN.md/.ralph/ still exist, restore from git if overwritten.
 - [ ] Install and configure Tailwind CSS v4 with Vite plugin
-- [ ] Initialize shadcn/ui (`npx shadcn@latest init`)
+- [ ] Initialize shadcn/ui (`npx shadcn@latest init --defaults --force`) — MUST use --defaults --force for non-interactive execution
 - [ ] Install all shadcn components: sidebar, table, dialog, alert-dialog, form, input, button, select, textarea, badge, card, skeleton, sonner, command, popover, separator, dropdown-menu, sheet, tooltip, label
 - [ ] Install dependencies: react-router, @tanstack/react-query, @tanstack/react-table, zod, @hookform/resolvers, lucide-react, sonner
 - [ ] Create `.env` with `VITE_API_BASE_URL=http://localhost:8080/api`
@@ -17,13 +17,13 @@
 - [ ] Create `src/api/artists.js` — getArtists, getArtist, createArtist, updateArtist, deleteArtist
 - [ ] Create `src/api/acts.js` — getActs, getAct, createAct, updateAct, deleteAct, attachArtist, detachArtist, attachStage, detachStage
 - [ ] Create `src/api/stages.js` — getStages, getStage, createStage, updateStage, deleteStage
-- [ ] Create `src/api/media.js` — uploadMedia (FormData), getMedia, deleteMedia
+- [ ] Create `src/api/media.js` — getMediaList (paginated), getMedia, uploadMedia (FormData), deleteMedia
 - [ ] Create `src/api/search.js` — search with query params
 - [ ] Create `src/hooks/useEvents.js` — useEvents, useEvent, useCreateEvent, useUpdateEvent, useDeleteEvent
 - [ ] Create `src/hooks/useArtists.js` — same pattern
 - [ ] Create `src/hooks/useActs.js` — same pattern + useAttachArtist, useDetachArtist, useAttachStage, useDetachStage
 - [ ] Create `src/hooks/useStages.js` — same pattern
-- [ ] Create `src/hooks/useMedia.js` — useUploadMedia, useDeleteMedia
+- [ ] Create `src/hooks/useMedia.js` — useMediaList, useUploadMedia, useDeleteMedia
 - [ ] Git commit: "Add API client layer and React Query hooks"
 
 ## Phase 2: App Shell & Layout
@@ -43,8 +43,9 @@
 ## Phase 4: Events Management
 - [ ] Build `src/pages/events/EventsPage.jsx` — DataTable with columns (name, location, start_date, end_date, stages count, actions dropdown), pagination, filter by name, create/edit/delete flows
 - [ ] Build `src/pages/events/EventForm.jsx` — Dialog with React Hook Form + Zod, fields: name, description, location, start_date, end_date, banner_media_id. Handle create/edit modes, 422 error mapping, toast notifications
-- [ ] Git commit: "Add Events management page with CRUD operations"
-- [ ] **CHECKPOINT**: Navigate to /events, create/edit/delete events, pagination and filtering work
+- [ ] Build `src/pages/events/EventStagesDialog.jsx` — Dialog showing stages for an event with remove button + inline form to add new stages (auto-sets event_id). Add "Manage Stages" action to Events table dropdown.
+- [ ] Git commit: "Add Events management page with CRUD and stage linking"
+- [ ] **CHECKPOINT**: Navigate to /events, create/edit/delete events, manage stages per event, pagination and filtering work
 
 ## Phase 5: Artists Management
 - [ ] Build `src/pages/artists/ArtistsPage.jsx` — DataTable with columns (name, genre badge, bio truncated, acts count, actions)
@@ -67,7 +68,7 @@
 - [ ] **CHECKPOINT**: CRUD works, event selection combobox works
 
 ## Phase 8: Media Management
-- [ ] Build `src/pages/media/MediaPage.jsx` — Upload zone (drag-and-drop + file input), type selector, grid of recently uploaded media cards with delete
+- [ ] Build `src/pages/media/MediaPage.jsx` — Upload zone (drag-and-drop + file input), type selector, paginated grid of ALL media from GET /media endpoint with delete per card
 - [ ] Update `src/pages/events/EventForm.jsx` — Replace banner_media_id text input with media upload/picker with thumbnail preview
 - [ ] Update `src/pages/artists/ArtistForm.jsx` — Same for image_media_id
 - [ ] Git commit: "Add Media management and integrate media picker into forms"

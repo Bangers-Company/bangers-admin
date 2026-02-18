@@ -28,12 +28,14 @@ When building this project, you have access to these MCP tools — use them:
 
 ### Task 0.1: Initialize Vite + React project
 
+IMPORTANT: The project directory already has files (CLAUDE.md, PLAN.md, .ralph/, .git/). Vite will refuse to scaffold into a non-empty directory without `--force`. You MUST use the force flag or it will block:
+
 ```bash
-npm create vite@latest . -- --template react
+npm create vite@latest . -- --template react --force
 npm install
 ```
 
-If the project already has files, skip this step.
+After scaffolding, verify that CLAUDE.md, PLAN.md, .ralph/, and .ralphrc were NOT overwritten. If any were deleted, restore them from git: `git checkout -- CLAUDE.md PLAN.md .ralph/ .ralphrc`
 
 ### Task 0.2: Install Tailwind CSS v4
 
@@ -68,14 +70,13 @@ Add to the top of `src/index.css`:
 
 ### Task 0.3: Initialize shadcn/ui
 
+IMPORTANT: The default `npx shadcn@latest init` is interactive and will prompt for options. Ralph runs non-interactively so you MUST use flags to skip prompts:
+
 ```bash
-npx shadcn@latest init
+npx shadcn@latest init --defaults --force
 ```
 
-Choose these options:
-- Style: Default
-- Base color: Zinc
-- CSS variables: Yes
+This uses the default style, zinc base color, and CSS variables. The `--force` flag overwrites any existing files if needed.
 
 ### Task 0.4: Install all required shadcn components
 
@@ -196,6 +197,7 @@ Create `src/api/stages.js`:
 
 Create `src/api/media.js`:
 ```js
+// getMediaList(page) → GET /media?page={page}
 // getMedia(id) → GET /media/{id}
 // uploadMedia(file, type, isPublic) → POST /media  (multipart/form-data, NOT JSON)
 // deleteMedia(id) → DELETE /media/{id}
@@ -233,8 +235,9 @@ Create `src/hooks/useStages.js` — same pattern with queryKey: `['stages', ...]
 
 Create `src/hooks/useMedia.js`:
 ```js
-// useUploadMedia() — useMutation
-// useDeleteMedia() — useMutation
+// useMediaList(page) — useQuery with queryKey: ['media', page]
+// useUploadMedia() — useMutation, onSuccess: invalidate ['media']
+// useDeleteMedia() — useMutation, onSuccess: invalidate ['media']
 ```
 
 All hooks should use `keepPreviousData` / `placeholderData: keepPreviousData` for paginated queries to prevent UI flicker.
@@ -475,14 +478,34 @@ Uses shadcn `Dialog` with:
 - Cancel button closes the dialog
 - Submit button shows loading spinner when submitting
 
-### Task 4.3: Git commit
+### Task 4.3: Create Event Stages management dialog (Core Feature 8)
+
+Create `src/pages/events/EventStagesDialog.jsx`:
+
+This dialog manages the one-to-many relationship between an Event and its Stages. The event show endpoint (`GET /events/{id}`) returns `stages` in the response.
+
+Props:
+- `open`, `onOpenChange`
+- `event` — the event object (fetch with `useEvent(id)` to get stages included)
+
+UI:
+- Dialog title: "Manage Stages for {event.name}"
+- Two sections:
+  1. **Current Stages** — list of stages belonging to this event, each with an "Edit" and "Remove" button. Remove calls `useDeleteStage(stageId)` (since stages belong to an event via FK, removing means deleting the stage).
+  2. **Add Stage** — an inline form (or sub-dialog) with fields: name (required), description (optional). The `event_id` is automatically set to the current event. On submit, calls `useCreateStage({ event_id: event.id, name, description })`.
+- Both lists update reactively via React Query invalidation of `['events', event.id]` and `['stages']`
+- Show toast on create/delete success
+
+Add a "Manage Stages" option to the Events table actions dropdown, alongside Edit and Delete.
+
+### Task 4.4: Git commit
 
 ```bash
 git add -A
-git commit -m "Add Events management page with CRUD operations"
+git commit -m "Add Events management page with CRUD and stage linking"
 ```
 
-**Checkpoint**: Navigate to /events. The table should load events from the backend (may be empty). Create, edit, and delete should work. Pagination and filtering should work. Test with the backend running.
+**Checkpoint**: Navigate to /events. The table should load events from the backend (may be empty). Create, edit, and delete should work. Pagination and filtering should work. "Manage Stages" opens a dialog to view/add/remove stages for that event. Test with the backend running.
 
 ---
 
@@ -661,10 +684,7 @@ UI:
   - Each card has a delete button (trash icon) that opens DeleteDialog
   - Use a simple fetch to list media (note: the backend doesn't have a list media endpoint — if this is the case, track uploaded media client-side or skip the grid for now and only show upload + individual lookup by ID)
 
-IMPORTANT: The backend only has `POST /media` (upload), `GET /media/{id}` (show single), and `DELETE /media/{id}`. There is NO list/index endpoint for media. Handle this by:
-- Option A: Just provide the upload interface and a "Lookup by ID" input field
-- Option B: Store recently uploaded media IDs in React state/localStorage and display those
-- Choose Option B for better UX
+The backend now has `GET /media` (paginated list), `POST /media` (upload), `GET /media/{id}` (show single), and `DELETE /media/{id}`. Use the list endpoint to display all media in a paginated grid below the upload zone.
 
 ### Task 8.2: Integrate media picker into Event and Artist forms
 
@@ -880,6 +900,7 @@ Base URL: `http://localhost:8080/api`
 | GET | /stages/{id} | — | Includes event |
 | PUT | /stages/{id} | same as POST | Returns 200 |
 | DELETE | /stages/{id} | — | Returns 204 |
+| GET | /media | — | Paginated list |
 | POST | /media | FormData: `file`, `type`, `is_public?` | Multipart upload, max 5MB image |
 | GET | /media/{id} | — | Single media item |
 | DELETE | /media/{id} | — | Returns 204 |
