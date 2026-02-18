@@ -3,6 +3,7 @@ import { LayoutDashboard, Calendar, Music, Mic, LayoutGrid, Image } from 'lucide
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -12,6 +13,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from '@/components/ui/sidebar'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 const navItems = [
   { title: 'Dashboard', path: '/', icon: LayoutDashboard, exact: true },
@@ -67,6 +69,13 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <ThemeToggle />
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   )
