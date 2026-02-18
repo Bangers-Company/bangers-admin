@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router'
-import { Calendar, Music, Mic, LayoutGrid, Image } from 'lucide-react'
+import { LayoutDashboard, Calendar, Music, Mic, LayoutGrid, Image } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/sidebar'
 
 const navItems = [
+  { title: 'Dashboard', path: '/', icon: LayoutDashboard, exact: true },
   { title: 'Events', path: '/events', icon: Calendar },
   { title: 'Artists', path: '/artists', icon: Music },
   { title: 'Acts', path: '/acts', icon: Mic },
@@ -52,7 +53,7 @@ export function AppSidebar() {
                 <SidebarMenuItem key={item.path}>
                   <SidebarMenuButton
                     asChild
-                    isActive={location.pathname.startsWith(item.path)}
+                    isActive={item.exact ? location.pathname === item.path : location.pathname.startsWith(item.path)}
                     tooltip={item.title}
                   >
                     <NavLink to={item.path}>

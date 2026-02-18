@@ -1,7 +1,8 @@
-import { createBrowserRouter, RouterProvider, Navigate } from 'react-router'
+import { createBrowserRouter, RouterProvider } from 'react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createRoot } from 'react-dom/client'
 import AppLayout from './components/layout/AppLayout'
+import DashboardPage from './pages/dashboard/DashboardPage'
 import EventsPage from './pages/events/EventsPage'
 import ArtistsPage from './pages/artists/ArtistsPage'
 import ActsPage from './pages/acts/ActsPage'
@@ -23,7 +24,7 @@ const router = createBrowserRouter([
     path: '/',
     element: <AppLayout />,
     children: [
-      { index: true, element: <Navigate to="/events" replace /> },
+      { index: true, element: <DashboardPage /> },
       { path: 'events', element: <EventsPage /> },
       { path: 'artists', element: <ArtistsPage /> },
       { path: 'acts', element: <ActsPage /> },
