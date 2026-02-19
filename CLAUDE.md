@@ -85,6 +85,9 @@ src/
 | Media    | /media    | /media (multipart) | /media/{id} | — | /media/{id} |
 | Search   | /search?query=&date=&location=&entities= | — | — | — | — |
 
+**Dashboard endpoint**:
+- `GET /dashboard/stats` — returns `{ counts: { events, artists, acts, stages, media }, recent: { events: [...], artists: [...], acts: [...] } }`
+
 **Relationship endpoints (on Acts)**:
 - `POST /acts/{id}/artists` body: `{ artist_id }` — attach artist
 - `DELETE /acts/{id}/artists` body: `{ artist_id }` — detach artist
@@ -110,14 +113,18 @@ The API layer uses a single base client with per-resource modules. The base clie
 ## UI & Design Conventions
 
 - **Layout**: Sidebar navigation with page content area. Use shadcn Sidebar component.
-- **Tables**: Every resource page uses shadcn DataTable with column sorting, filtering by name, and pagination. Follow the shadcn data-table pattern with TanStack Table.
-- **Forms**: Dialog/sheet-based forms for create/edit. Use shadcn Dialog + Form + Input/Select/Textarea. Zod schemas mirror backend validation.
-- **Delete**: Confirmation dialog (shadcn AlertDialog) before any delete operation.
+- **Dashboard**: Home page at `/` showing stat cards and recent activity. Uses `GET /dashboard/stats`.
+- **Tables**: Every resource page uses shadcn DataTable with column sorting, filtering by name, pagination, bulk selection, and column visibility toggle. Follow the shadcn data-table pattern with TanStack Table.
+- **Forms**: Dialog/sheet-based forms for create/edit. Use shadcn Dialog + Form + Input/Select/Textarea. Zod schemas mirror backend validation. Autofocus first field. Warn on unsaved changes.
+- **Delete**: Confirmation dialog (shadcn AlertDialog) before any delete operation. Supports bulk delete via row selection.
 - **Relationships**: On detail/edit views, show linked items with ability to attach/detach. Use shadcn Combobox or MultiSelect pattern for picking related entities.
 - **Media**: Upload via drag-and-drop zone, preview thumbnails. Show image dimensions and size.
+- **Dark Mode**: Uses `next-themes` with ThemeProvider. Toggle in sidebar footer. Supports light/dark/system.
+- **Global Search**: Command palette (Cmd+K / Ctrl+K) using shadcn Command component and `GET /search` endpoint.
 - **Loading states**: Use shadcn Skeleton for table loading, spinner for form submissions.
-- **Error handling**: Toast notifications (shadcn Sonner) for success/error feedback. Inline form validation errors from Zod + backend 422 responses.
-- **Empty states**: Show helpful message + CTA button when tables are empty.
+- **Error handling**: Toast notifications (shadcn Sonner) for success/error feedback. Inline form validation errors from Zod + backend 422 responses. React error boundary wraps the app.
+- **Empty states**: Resource-specific empty states with icon, message, and CTA button.
+- **Breadcrumbs**: Show current navigation path in the header using shadcn Breadcrumb component.
 
 ## Code Style
 

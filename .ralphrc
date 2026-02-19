@@ -12,9 +12,8 @@ CLAUDE_TIMEOUT_MINUTES=30
 CLAUDE_OUTPUT_FORMAT="json"
 
 # Tool permissions
-# Comma-separated list of allowed tools
-# Safe git subcommands only - broad Bash(git *) allows destructive commands like git clean/git rm (Issue #149)
-ALLOWED_TOOLS="Write,Read,Edit,Bash(git add *),Bash(git commit *),Bash(git diff *),Bash(git log *),Bash(git status),Bash(git status *),Bash(git push *),Bash(git pull *),Bash(git fetch *),Bash(git checkout *),Bash(git branch *),Bash(git stash *),Bash(git merge *),Bash(git tag *),Bash(git init *),Bash(git init),Bash(npm *),Bash(npx *),Bash(node *),Bash(echo *),Bash(mkdir *),Bash(ls *),Bash(cat *),mcp__shadcn__get_project_registries,mcp__shadcn__list_items_in_registries,mcp__shadcn__search_items_in_registries,mcp__shadcn__view_items_in_registries,mcp__shadcn__get_item_examples_from_registries,mcp__shadcn__get_add_command_for_items,mcp__shadcn__get_audit_checklist,mcp__context7__resolve-library-id,mcp__context7__query-docs"
+# Using Bash(*) since project is git-backed and empty — low risk
+ALLOWED_TOOLS="Write,Read,Edit,Bash(*),mcp__shadcn__get_project_registries,mcp__shadcn__list_items_in_registries,mcp__shadcn__search_items_in_registries,mcp__shadcn__view_items_in_registries,mcp__shadcn__get_item_examples_from_registries,mcp__shadcn__get_add_command_for_items,mcp__shadcn__get_audit_checklist,mcp__context7__resolve-library-id,mcp__context7__query-docs"
 
 # Session management
 SESSION_CONTINUITY=true

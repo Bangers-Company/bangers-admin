@@ -905,24 +905,397 @@ Base URL: `http://localhost:8080/api`
 | GET | /media/{id} | — | Single media item |
 | DELETE | /media/{id} | — | Returns 204 |
 | GET | /search | Query params: `query`, `date`, `location`, `entities`, `per_page` | Multi-entity search |
+| GET | /dashboard/stats | — | Returns counts + recent items for all resources |
 
 ---
 
-## Acceptance Criteria Checklist
+## Phase 10: Dashboard & Overview
 
-- [ ] Tables with filtering on all resource pages
-- [ ] Clean shadcn/ui design throughout
-- [ ] All data correctly displayed in tables
-- [ ] All data correctly created via forms
-- [ ] All data correctly updated via forms
-- [ ] All data correctly deleted via confirmation dialogs
-- [ ] Artists can be linked to Acts (attach/detach)
-- [ ] Stages can be linked to Acts (attach/detach)
-- [ ] Stages are linked to Events (via event_id on create)
-- [ ] Media can be uploaded
-- [ ] Media can be attached to Events (banner) and Artists (image)
-- [ ] Pagination works on all tables
-- [ ] Loading states shown during data fetching
-- [ ] Error states shown on failures
-- [ ] Toast notifications for all CRUD operations
-- [ ] Responsive layout works on mobile
+### Task 10.1: Create Dashboard API module and hook
+
+Create `src/api/dashboard.js`:
+```js
+// getDashboardStats() → GET /dashboard/stats
+// Returns: { counts: { events, artists, acts, stages, media }, recent: { events: [...], artists: [...], acts: [...] } }
+```
+
+Create `src/hooks/useDashboard.js`:
+```js
+// useDashboardStats() — useQuery with queryKey: ['dashboard', 'stats']
+// Set staleTime to 60 seconds (data doesn't need to be super fresh)
+```
+
+### Task 10.2: Create Dashboard page
+
+Create `src/pages/dashboard/DashboardPage.jsx`:
+
+UI Layout:
+- PageHeader with title "Dashboard", description "Overview of your festival management"
+- **Stats Cards Row** — 5 cards in a responsive grid (1 col mobile, 2 col tablet, 5 col desktop):
+  - Events count (Calendar icon, link to /events)
+  - Artists count (Music icon, link to /artists)
+  - Acts count (Mic icon, link to /acts)
+  - Stages count (LayoutGrid icon, link to /stages)
+  - Media count (Image icon, link to /media)
+  - Each card uses shadcn `Card` with CardHeader (icon + title), CardContent (large count number)
+  - Cards should be clickable — navigate to the respective page on click
+  - While loading, show Skeleton in place of the count number
+- **Recent Activity Section** — below the stats cards:
+  - 3 side-by-side panels (stack on mobile): "Recent Events", "Recent Artists", "Recent Acts"
+  - Each panel is a shadcn `Card` with a list of up to 5 recent items
+  - Each item shows: name (as a text), created_at formatted as relative time (e.g., "2 hours ago" or "Jan 15")
+  - If the list is empty, show "No items yet"
+  - Each panel has a "View All →" link at the bottom that navigates to the resource page
+- **Quick Actions Section** — row of buttons:
+  - "Create Event", "Add Artist", "Create Act" — each opens the respective creation form
+  - Use shadcn `Button` with variant "outline" and appropriate icon
+
+Implementation pattern:
+```jsx
+import { useDashboardStats } from '@/hooks/useDashboard'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useNavigate } from 'react-router'
+```
+
+For relative time formatting, use a simple helper function — do NOT add date-fns or any new dependency. Just calculate the difference and return "X minutes ago", "X hours ago", "X days ago", or format as "Jan 15" if older than 7 days. Use `Intl.RelativeTimeFormat` if you want.
+
+### Task 10.3: Update routing and navigation
+
+Update `src/main.jsx`:
+- Import DashboardPage
+- Change the index route from `<Navigate to="/events" replace />` to `<DashboardPage />`
+- Keep all existing routes
+
+Update `src/components/layout/AppSidebar.jsx`:
+- Add "Dashboard" as the FIRST nav item with `LayoutDashboard` icon from lucide-react, path: `/`
+- Keep all existing nav items below it
+- The Dashboard nav item should use exact path matching (`location.pathname === '/'`) instead of `startsWith`
+
+### Task 10.4: Git commit
+
+```bash
+git add -A
+git commit -m "Add Dashboard page with stats overview and recent activity"
+```
+
+**Checkpoint**: Navigate to `/`. Dashboard shows stat cards with counts from the API. Recent items display correctly. Clicking a stat card navigates to its page. "View All" links work.
+
+---
+
+## Phase 11: Dark Mode
+
+### Task 11.1: Set up ThemeProvider
+
+The project already has `next-themes` installed. Create `src/components/ThemeProvider.jsx`:
+
+```jsx
+import { ThemeProvider as NextThemesProvider } from 'next-themes'
+
+export function ThemeProvider({ children, ...props }) {
+  return <NextThemesProvider {...props}>{children}</NextThemesProvider>
+}
+```
+
+Before implementing, use Context7 to look up the `next-themes` API to verify the correct usage pattern for React (non-Next.js) apps. The key props are:
+- `attribute="class"` — applies theme via CSS class on `<html>`
+- `defaultTheme="system"` — respects OS preference by default
+- `enableSystem` — enables system theme detection
+- `disableTransitionOnChange` — prevents flash during theme switch
+
+### Task 11.2: Create ThemeToggle component
+
+Create `src/components/ThemeToggle.jsx`:
+
+Uses shadcn `Button` + `DropdownMenu` pattern:
+- A button in the sidebar footer with Sun/Moon icon
+- Clicking opens a dropdown with 3 options: Light, Dark, System
+- Uses `useTheme()` hook from next-themes to get/set theme
+- The button icon should reflect the current theme (Sun for light, Moon for dark, Monitor for system)
+
+Use the shadcn MCP to look up `@shadcn/dropdown-menu` for the component API.
+
+Icon pattern:
+```jsx
+import { Sun, Moon, Monitor } from 'lucide-react'
+import { useTheme } from 'next-themes'
+```
+
+### Task 11.3: Integrate ThemeProvider and ThemeToggle
+
+Update `src/main.jsx`:
+- Wrap the `RouterProvider` with `<ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>`
+- The ThemeProvider must be OUTSIDE the RouterProvider but INSIDE QueryClientProvider
+
+Update `src/components/layout/AppSidebar.jsx`:
+- Import and add the ThemeToggle component to the sidebar footer area
+- Use shadcn's `SidebarFooter` component to place it at the bottom of the sidebar
+
+### Task 11.4: Verify dark mode CSS
+
+The `src/index.css` already has CSS variables for both light and dark themes via the `.dark` class selector. Verify that:
+- All shadcn components respect the dark theme (they should, since they use CSS variables)
+- The sidebar, header, and content area backgrounds change correctly
+- Cards, tables, and dialogs all have appropriate dark mode styling
+
+If any component has hardcoded colors (white, black, gray-*) instead of CSS variable colors, fix them to use the theme variables.
+
+### Task 11.5: Git commit
+
+```bash
+git add -A
+git commit -m "Add dark mode with system preference detection and toggle"
+```
+
+**Checkpoint**: Click the theme toggle in the sidebar. Light/Dark/System all work. OS preference is respected on first load. The preference persists across page reloads.
+
+---
+
+## Phase 12: Global Search (Command Palette)
+
+### Task 12.1: Create search hook
+
+Create `src/hooks/useSearch.js`:
+```js
+// useSearch(query, options) — useQuery with queryKey: ['search', query]
+// Only enabled when query.length >= 2 (avoid searching on empty/single char)
+// Uses the existing search API: GET /search?query={query}&entities=events,artists,acts
+// Returns: { events: { data: [...] }, artists: { data: [...] }, acts: { data: [...] } }
+```
+
+The `src/api/search.js` file already exists with the search function — use it.
+
+### Task 12.2: Create CommandPalette component
+
+Create `src/components/shared/CommandPalette.jsx`:
+
+This is a global search dialog that opens with Cmd+K (Mac) / Ctrl+K (Windows/Linux).
+
+Use shadcn `Command` component (which is built on cmdk). Before implementing, use the shadcn MCP to look up `@shadcn/command` for the component API and examples.
+
+Structure:
+```jsx
+import { CommandDialog, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem, CommandSeparator } from '@/components/ui/command'
+```
+
+Features:
+- Opens as a dialog overlay (CommandDialog)
+- Text input at the top for search query
+- Debounce the search query by 300ms before calling the API (use a simple useState + useEffect pattern with setTimeout/clearTimeout — no new dependencies)
+- Results grouped by entity type:
+  - "Events" group — show event name + location
+  - "Artists" group — show artist name + genre
+  - "Acts" group — show act name
+- Each result item has an icon matching its type (Calendar, Music, Mic)
+- Clicking a result navigates to the respective resource page (e.g., /events for events)
+- Show "No results found" when search returns empty
+- Show "Type to search..." when input is empty
+- Loading state: show "Searching..." text while the API call is in flight
+
+### Task 12.3: Register keyboard shortcut and integrate
+
+Update `src/components/layout/AppLayout.jsx`:
+- Import CommandPalette
+- Add state: `const [searchOpen, setSearchOpen] = useState(false)`
+- Add a keyboard listener in useEffect for Cmd+K / Ctrl+K that sets `searchOpen` to true
+- Render `<CommandPalette open={searchOpen} onOpenChange={setSearchOpen} />`
+- Add a search button in the header bar (Search icon from lucide-react + "Search..." text + keyboard shortcut hint "⌘K") that also opens the palette
+
+Update `src/components/layout/AppSidebar.jsx`:
+- No changes needed here (search lives in the header, not sidebar)
+
+### Task 12.4: Git commit
+
+```bash
+git add -A
+git commit -m "Add global search command palette with Cmd+K shortcut"
+```
+
+**Checkpoint**: Press Cmd+K (or Ctrl+K). Search dialog opens. Type a search query. Results appear grouped by type. Click a result to navigate. Press Escape to close.
+
+---
+
+## Phase 13: UX Improvements
+
+### Task 13.1: Add Error Boundary
+
+Create `src/components/shared/ErrorBoundary.jsx`:
+
+A React class component (error boundaries must be class components) that:
+- Catches JavaScript errors anywhere in the child component tree
+- Renders a friendly fallback UI with:
+  - An error icon (AlertTriangle from lucide-react)
+  - "Something went wrong" heading
+  - The error message in muted text
+  - A "Try Again" button that resets the error boundary state and reloads the page
+- Uses shadcn `Card` for the fallback layout
+- Logs the error to console.error
+
+Update `src/main.jsx`:
+- Wrap the router/app in the ErrorBoundary component
+- Place it as the outermost wrapper (outside QueryClientProvider)
+
+### Task 13.2: Add breadcrumb navigation
+
+Create `src/components/shared/Breadcrumbs.jsx`:
+
+A component that reads the current route from React Router and renders breadcrumb navigation.
+
+Use shadcn `Breadcrumb` component. Before implementing, use the shadcn MCP to look up `@shadcn/breadcrumb` for the component API.
+
+```jsx
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb'
+import { useLocation } from 'react-router'
+```
+
+Logic:
+- Split `location.pathname` into segments
+- Map each segment to a breadcrumb item with a label (capitalize the segment name, e.g., "events" → "Events")
+- The last segment is the current page (not a link)
+- Home/Dashboard is always the first breadcrumb (links to `/`)
+
+Update `src/components/layout/AppLayout.jsx`:
+- Add the Breadcrumbs component in the header, after the SidebarTrigger and separator
+- Replace the static "Bangers Admin" text with the Breadcrumbs component
+
+### Task 13.3: Fix combobox pagination in Stage form
+
+Update `src/pages/stages/StageForm.jsx`:
+
+The event selection combobox currently only loads page 1 of events. Fix it by:
+- Loading ALL events for the combobox by fetching with a large page size, OR
+- Better approach: add a search parameter to the combobox that filters events client-side from the first page, and show a note if there are more events than shown
+- Simplest fix: fetch events with page size of 100 by modifying the API call: `getEvents(1, 100)` — or just fetch multiple pages
+
+The cleanest approach: update the `getEvents` function to accept an optional `perPage` parameter, then call it with a high number for the combobox. Update `src/api/events.js`:
+```js
+export function getEvents(page = 1, perPage = 15) {
+  return apiClient.get('/events', { page, per_page: perPage })
+}
+```
+
+Then in StageForm, call `useEvents(1, 100)` or similar. Update the `useEvents` hook to accept the perPage param too.
+
+### Task 13.4: Form autofocus
+
+Update ALL form dialogs to autofocus the first input field when the dialog opens:
+- `src/pages/events/EventForm.jsx` — autofocus the "name" input
+- `src/pages/artists/ArtistForm.jsx` — autofocus the "name" input
+- `src/pages/acts/ActForm.jsx` — autofocus the "name" input
+- `src/pages/stages/StageForm.jsx` — autofocus the "name" input (not the event combobox)
+
+Use the `autoFocus` prop on the first `Input` component in each form.
+
+### Task 13.5: Unsaved changes warning
+
+Update ALL form dialogs to warn before closing if the form has unsaved changes:
+
+Pattern:
+```jsx
+const { formState: { isDirty } } = form
+// In the Dialog's onOpenChange handler:
+const handleOpenChange = (open) => {
+  if (!open && isDirty) {
+    if (!window.confirm('You have unsaved changes. Are you sure you want to close?')) {
+      return
+    }
+  }
+  onOpenChange(open)
+}
+```
+
+Apply to: EventForm, ArtistForm, ActForm, StageForm.
+
+### Task 13.6: Git commit
+
+```bash
+git add -A
+git commit -m "Add error boundary, breadcrumbs, combobox fix, form UX improvements"
+```
+
+**Checkpoint**: Error boundary catches errors gracefully. Breadcrumbs show current location. Stage form loads all events. Forms autofocus first field. Closing a dirty form shows confirmation.
+
+---
+
+## Phase 14: Data Quality & Table Enhancements
+
+### Task 14.1: Add bulk delete to DataTable
+
+Update `src/components/shared/DataTable.jsx`:
+
+Add an optional bulk selection feature:
+- New prop: `enableRowSelection` (boolean, default false)
+- When enabled, add a checkbox column as the first column
+- Header checkbox selects/deselects all visible rows
+- Track selected row IDs via TanStack Table's row selection feature
+- New prop: `onBulkDelete(selectedIds)` — callback when the "Delete Selected" button is clicked
+- Show a floating action bar at the top when rows are selected: "{N} selected" + "Delete Selected" button (destructive variant)
+- The delete button opens a DeleteDialog with message "Are you sure you want to delete {N} items?"
+
+Use shadcn `Checkbox` component for the selection checkboxes.
+
+Update ALL resource pages (EventsPage, ArtistsPage, ActsPage, StagesPage) to:
+- Pass `enableRowSelection={true}` to DataTable
+- Implement `onBulkDelete` that calls the individual delete mutation for each selected ID
+- After all deletes complete, invalidate the query and show a toast
+
+### Task 14.2: Add column visibility toggle
+
+Update `src/components/shared/DataTable.jsx`:
+
+Add column visibility controls:
+- New prop: `enableColumnVisibility` (boolean, default false)
+- When enabled, show a "Columns" dropdown button next to the filter input
+- Uses shadcn `DropdownMenu` with `DropdownMenuCheckboxItem` for each column
+- Users can toggle columns on/off
+- Use TanStack Table's `columnVisibility` state
+
+Use the shadcn MCP to look up `@shadcn/dropdown-menu` for the checkbox item pattern.
+
+Enable column visibility on all resource pages.
+
+### Task 14.3: Improve table empty states
+
+Update each resource page's empty state to be more engaging:
+
+Pattern for each page — when the table is empty AND not loading:
+- Show a centered card with:
+  - A large muted icon matching the resource type (Calendar for events, Music for artists, etc.)
+  - Heading: "No {resources} yet"
+  - Description: "Create your first {resource} to get started."
+  - A primary CTA button: "Create {Resource}" that opens the create form
+- Use shadcn `Card` with centered content
+
+Update DataTable to accept a custom `emptyState` ReactNode prop (instead of the default "No results found" text).
+
+Apply to: EventsPage, ArtistsPage, ActsPage, StagesPage, MediaPage.
+
+### Task 14.4: Git commit
+
+```bash
+git add -A
+git commit -m "Add bulk delete, column visibility, and improved empty states"
+```
+
+**Checkpoint**: Tables show checkboxes. Can select multiple rows and delete them. Column visibility dropdown works. Empty states show the resource-specific design with CTA.
+
+---
+
+## Expanded Acceptance Criteria
+
+In addition to the original checklist:
+
+- [ ] Dashboard shows accurate counts for all resources
+- [ ] Dashboard shows recent items with relative timestamps
+- [ ] Dark mode toggle works (light/dark/system)
+- [ ] Dark mode preference persists across page reloads
+- [ ] Global search opens with Cmd+K / Ctrl+K
+- [ ] Search results grouped by entity type with navigation
+- [ ] Error boundary catches and displays errors gracefully
+- [ ] Breadcrumb navigation shows current location
+- [ ] Stage form event combobox loads all events (not just page 1)
+- [ ] Forms autofocus first field when opened
+- [ ] Unsaved changes warning on form close
+- [ ] Bulk row selection and delete works on all tables
+- [ ] Column visibility toggle works on all tables
+- [ ] Custom empty states on all resource pages
