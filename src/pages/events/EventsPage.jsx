@@ -33,6 +33,9 @@ export default function EventsPage() {
   const [deletingEvent, setDeletingEvent] = useState(null)
   const [stagesDialogOpen, setStagesDialogOpen] = useState(false)
   const [stagesEvent, setStagesEvent] = useState(null)
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false)
+  const [bulkDeleteIds, setBulkDeleteIds] = useState([])
+  const [bulkDeleting, setBulkDeleting] = useState(false)
 
   const { data, isLoading } = useEvents(page + 1)
   const deleteEvent = useDeleteEvent()
@@ -127,6 +130,20 @@ export default function EventsPage() {
     }
   }
 
+  async function handleBulkDelete() {
+    setBulkDeleting(true)
+    try {
+      await Promise.all(bulkDeleteIds.map((id) => deleteEvent.mutateAsync(id)))
+      toast.success(`${bulkDeleteIds.length} event(s) deleted`)
+      setBulkDeleteDialogOpen(false)
+      setBulkDeleteIds([])
+    } catch (error) {
+      toast.error(error.message || 'Failed to delete some events')
+    } finally {
+      setBulkDeleting(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -153,6 +170,12 @@ export default function EventsPage() {
         filterColumn="name"
         filterPlaceholder="Filter events..."
         isLoading={isLoading}
+        enableRowSelection
+        enableColumnVisibility
+        onBulkDelete={(ids) => {
+          setBulkDeleteIds(ids)
+          setBulkDeleteDialogOpen(true)
+        }}
         emptyState={
           <div className="flex flex-col items-center gap-2 py-4">
             <p className="text-muted-foreground">No events yet.</p>
@@ -193,6 +216,17 @@ export default function EventsPage() {
         title="Delete Event"
         description={`Are you sure you want to delete "${deletingEvent?.name}"? This action cannot be undone.`}
         isDeleting={deleteEvent.isPending}
+      />
+      <DeleteDialog
+        open={bulkDeleteDialogOpen}
+        onOpenChange={(open) => {
+          setBulkDeleteDialogOpen(open)
+          if (!open) setBulkDeleteIds([])
+        }}
+        onConfirm={handleBulkDelete}
+        title="Delete Events"
+        description={`Are you sure you want to delete ${bulkDeleteIds.length} event(s)? This action cannot be undone.`}
+        isDeleting={bulkDeleting}
       />
     </div>
   )

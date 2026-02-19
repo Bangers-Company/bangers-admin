@@ -20,6 +20,9 @@ export default function StagesPage() {
   const [editingStage, setEditingStage] = useState(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deletingStage, setDeletingStage] = useState(null)
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false)
+  const [bulkDeleteIds, setBulkDeleteIds] = useState([])
+  const [bulkDeleting, setBulkDeleting] = useState(false)
 
   const { data, isLoading } = useStages(page + 1)
   const deleteStage = useDeleteStage()
@@ -96,6 +99,20 @@ export default function StagesPage() {
     }
   }
 
+  async function handleBulkDelete() {
+    setBulkDeleting(true)
+    try {
+      await Promise.all(bulkDeleteIds.map((id) => deleteStage.mutateAsync(id)))
+      toast.success(`${bulkDeleteIds.length} stage(s) deleted`)
+      setBulkDeleteDialogOpen(false)
+      setBulkDeleteIds([])
+    } catch (error) {
+      toast.error(error.message || 'Failed to delete some stages')
+    } finally {
+      setBulkDeleting(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -122,6 +139,12 @@ export default function StagesPage() {
         filterColumn="name"
         filterPlaceholder="Filter stages..."
         isLoading={isLoading}
+        enableRowSelection
+        enableColumnVisibility
+        onBulkDelete={(ids) => {
+          setBulkDeleteIds(ids)
+          setBulkDeleteDialogOpen(true)
+        }}
         emptyState={
           <div className="flex flex-col items-center gap-2 py-4">
             <p className="text-muted-foreground">No stages yet.</p>
@@ -154,6 +177,17 @@ export default function StagesPage() {
         title="Delete Stage"
         description={`Are you sure you want to delete "${deletingStage?.name}"? This action cannot be undone.`}
         isDeleting={deleteStage.isPending}
+      />
+      <DeleteDialog
+        open={bulkDeleteDialogOpen}
+        onOpenChange={(open) => {
+          setBulkDeleteDialogOpen(open)
+          if (!open) setBulkDeleteIds([])
+        }}
+        onConfirm={handleBulkDelete}
+        title="Delete Stages"
+        description={`Are you sure you want to delete ${bulkDeleteIds.length} stage(s)? This action cannot be undone.`}
+        isDeleting={bulkDeleting}
       />
     </div>
   )

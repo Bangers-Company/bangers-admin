@@ -1,93 +1,137 @@
 # Ralph Fix Plan — Bangers Admin Portal
 
 ## Phase 0: Project Scaffolding & Configuration
-- [ ] Initialize Vite + React project (`npm create vite@latest . -- --template react --force`) — MUST use --force since directory has existing files. After scaffolding, verify CLAUDE.md/PLAN.md/.ralph/ still exist, restore from git if overwritten.
-- [ ] Install and configure Tailwind CSS v4 with Vite plugin
-- [ ] Initialize shadcn/ui (`npx shadcn@latest init --defaults --force`) — MUST use --defaults --force for non-interactive execution
-- [ ] Install all shadcn components: sidebar, table, dialog, alert-dialog, form, input, button, select, textarea, badge, card, skeleton, sonner, command, popover, separator, dropdown-menu, sheet, tooltip, label
-- [ ] Install dependencies: react-router, @tanstack/react-query, @tanstack/react-table, zod, @hookform/resolvers, lucide-react, sonner
-- [ ] Create `.env` with `VITE_API_BASE_URL=http://localhost:8080/api`
-- [ ] Create project folder structure (src/api, components/layout, components/shared, pages/*, hooks, lib)
-- [ ] Git init and initial commit
-- [ ] **CHECKPOINT**: `npm run dev` starts with no errors
+- [x] Initialize Vite + React project
+- [x] Install and configure Tailwind CSS v4 with Vite plugin
+- [x] Initialize shadcn/ui
+- [x] Install all shadcn components
+- [x] Install dependencies
+- [x] Create `.env` with `VITE_API_BASE_URL=http://localhost:8080/api`
+- [x] Create project folder structure
+- [x] Git commit
+- [x] **CHECKPOINT**: `npm run build` succeeds, `npm run dev` starts
 
 ## Phase 1: API Client Layer
-- [ ] Create `src/api/client.js` — base fetch wrapper with JSON handling, error parsing, auth header placeholder
-- [ ] Create `src/api/events.js` — getEvents, getEvent, createEvent, updateEvent, deleteEvent
-- [ ] Create `src/api/artists.js` — getArtists, getArtist, createArtist, updateArtist, deleteArtist
-- [ ] Create `src/api/acts.js` — getActs, getAct, createAct, updateAct, deleteAct, attachArtist, detachArtist, attachStage, detachStage
-- [ ] Create `src/api/stages.js` — getStages, getStage, createStage, updateStage, deleteStage
-- [ ] Create `src/api/media.js` — getMediaList (paginated), getMedia, uploadMedia (FormData), deleteMedia
-- [ ] Create `src/api/search.js` — search with query params
-- [ ] Create `src/hooks/useEvents.js` — useEvents, useEvent, useCreateEvent, useUpdateEvent, useDeleteEvent
-- [ ] Create `src/hooks/useArtists.js` — same pattern
-- [ ] Create `src/hooks/useActs.js` — same pattern + useAttachArtist, useDetachArtist, useAttachStage, useDetachStage
-- [ ] Create `src/hooks/useStages.js` — same pattern
-- [ ] Create `src/hooks/useMedia.js` — useMediaList, useUploadMedia, useDeleteMedia
-- [ ] Git commit: "Add API client layer and React Query hooks"
+- [x] Create `src/api/client.js`
+- [x] Create `src/api/events.js`
+- [x] Create `src/api/artists.js`
+- [x] Create `src/api/acts.js`
+- [x] Create `src/api/stages.js`
+- [x] Create `src/api/media.js`
+- [x] Create `src/api/search.js`
+- [x] Create `src/hooks/useEvents.js`
+- [x] Create `src/hooks/useArtists.js`
+- [x] Create `src/hooks/useActs.js`
+- [x] Create `src/hooks/useStages.js`
+- [x] Create `src/hooks/useMedia.js`
+- [x] Git commit
 
 ## Phase 2: App Shell & Layout
-- [ ] Create `src/components/layout/AppSidebar.jsx` — shadcn Sidebar with nav items (Events, Artists, Acts, Stages, Media) using Lucide icons and React Router NavLink
-- [ ] Create `src/components/layout/AppLayout.jsx` — SidebarProvider + SidebarInset + Outlet + Toaster
-- [ ] Set up `src/main.jsx` — createBrowserRouter with QueryClientProvider, all routes under AppLayout
-- [ ] Create placeholder pages for all 5 routes (EventsPage, ArtistsPage, ActsPage, StagesPage, MediaPage)
-- [ ] Git commit: "Add app shell with sidebar navigation and routing"
-- [ ] **CHECKPOINT**: App shows sidebar, navigation works between all 5 pages
+- [x] Create `src/components/layout/AppSidebar.jsx`
+- [x] Create `src/components/layout/AppLayout.jsx`
+- [x] Set up `src/main.jsx` with router and QueryClientProvider
+- [x] Create placeholder pages
+- [x] Git commit
 
 ## Phase 3: Shared Components
-- [ ] Create `src/components/shared/DataTable.jsx` — reusable table with TanStack Table, server-side pagination, column sorting, text filter, loading skeletons, empty state
-- [ ] Create `src/components/shared/DeleteDialog.jsx` — AlertDialog with confirm/cancel, loading state
-- [ ] Create `src/components/shared/PageHeader.jsx` — title, description, action button
-- [ ] Git commit: "Add shared DataTable, DeleteDialog, and PageHeader components"
+- [x] Create `src/components/shared/DataTable.jsx`
+- [x] Create `src/components/shared/DeleteDialog.jsx`
+- [x] Create `src/components/shared/PageHeader.jsx`
+- [x] Git commit
 
 ## Phase 4: Events Management
-- [ ] Build `src/pages/events/EventsPage.jsx` — DataTable with columns (name, location, start_date, end_date, stages count, actions dropdown), pagination, filter by name, create/edit/delete flows
-- [ ] Build `src/pages/events/EventForm.jsx` — Dialog with React Hook Form + Zod, fields: name, description, location, start_date, end_date, banner_media_id. Handle create/edit modes, 422 error mapping, toast notifications
-- [ ] Build `src/pages/events/EventStagesDialog.jsx` — Dialog showing stages for an event with remove button + inline form to add new stages (auto-sets event_id). Add "Manage Stages" action to Events table dropdown.
-- [ ] Git commit: "Add Events management page with CRUD and stage linking"
-- [ ] **CHECKPOINT**: Navigate to /events, create/edit/delete events, manage stages per event, pagination and filtering work
+- [x] Build `src/pages/events/EventsPage.jsx`
+- [x] Build `src/pages/events/EventForm.jsx`
+- [x] Build `src/pages/events/EventStagesDialog.jsx`
+- [x] Git commit
 
 ## Phase 5: Artists Management
-- [ ] Build `src/pages/artists/ArtistsPage.jsx` — DataTable with columns (name, genre badge, bio truncated, acts count, actions)
-- [ ] Build `src/pages/artists/ArtistForm.jsx` — Dialog with fields: name, bio, genre, image_media_id
-- [ ] Git commit: "Add Artists management page with CRUD operations"
-- [ ] **CHECKPOINT**: Full CRUD works on /artists
+- [x] Build `src/pages/artists/ArtistsPage.jsx`
+- [x] Build `src/pages/artists/ArtistForm.jsx`
+- [x] Git commit
 
 ## Phase 6: Acts Management + Relationship Linking
-- [ ] Build `src/pages/acts/ActsPage.jsx` — DataTable with columns (name, description, artists count, stages count, actions with Manage Artists/Stages options)
-- [ ] Build `src/pages/acts/ActForm.jsx` — Dialog with fields: name, description
-- [ ] Build `src/pages/acts/ActArtistsDialog.jsx` — Dialog showing current artists with remove button + Combobox to search and attach new artists
-- [ ] Build `src/pages/acts/ActStagesDialog.jsx` — Dialog showing current stages with remove button + Combobox to search and attach new stages
-- [ ] Git commit: "Add Acts management with artist and stage linking"
-- [ ] **CHECKPOINT**: CRUD works, can attach/detach artists and stages
+- [x] Build `src/pages/acts/ActsPage.jsx`
+- [x] Build `src/pages/acts/ActForm.jsx`
+- [x] Build `src/pages/acts/ActArtistsDialog.jsx`
+- [x] Build `src/pages/acts/ActStagesDialog.jsx`
+- [x] Git commit
 
 ## Phase 7: Stages Management
-- [ ] Build `src/pages/stages/StagesPage.jsx` — DataTable with columns (name, event name, description, actions)
-- [ ] Build `src/pages/stages/StageForm.jsx` — Dialog with Combobox for event selection (required), name, description
-- [ ] Git commit: "Add Stages management with event selection"
-- [ ] **CHECKPOINT**: CRUD works, event selection combobox works
+- [x] Build `src/pages/stages/StagesPage.jsx` — DataTable with columns (name, event name, description, actions)
+- [x] Build `src/pages/stages/StageForm.jsx` — Dialog with Combobox for event selection (required), name, description
+- [x] Git commit: "Add Stages management with event selection"
+- [x] **CHECKPOINT**: CRUD works, event selection combobox works
 
 ## Phase 8: Media Management
-- [ ] Build `src/pages/media/MediaPage.jsx` — Upload zone (drag-and-drop + file input), type selector, paginated grid of ALL media from GET /media endpoint with delete per card
-- [ ] Update `src/pages/events/EventForm.jsx` — Replace banner_media_id text input with media upload/picker with thumbnail preview
-- [ ] Update `src/pages/artists/ArtistForm.jsx` — Same for image_media_id
-- [ ] Git commit: "Add Media management and integrate media picker into forms"
-- [ ] **CHECKPOINT**: Can upload images, forms show media picker with preview
+- [x] Build `src/pages/media/MediaPage.jsx` — Upload zone (drag-and-drop + file input), type selector, paginated grid of ALL media from GET /media endpoint with delete per card
+- [x] Update `src/pages/events/EventForm.jsx` — Replace banner_media_id text input with media upload/picker with thumbnail preview
+- [x] Update `src/pages/artists/ArtistForm.jsx` — Same for image_media_id
+- [x] Git commit: "Add Media management and integrate media picker into forms"
+- [x] **CHECKPOINT**: Can upload images, forms show media picker with preview
 
 ## Phase 9: Polish & Final Touches
-- [ ] Ensure all loading states work (skeleton tables, spinner on form submit, disabled delete button while deleting)
-- [ ] Ensure all API errors handled (422 → form errors, network errors → toast, 404 → toast)
-- [ ] Add empty states to all tables ("No events yet. Create your first event to get started." + CTA)
-- [ ] Responsive design: sidebar collapses on mobile, tables scroll horizontally, forms stack vertically
-- [ ] Active nav states with React Router NavLink
-- [ ] Set document.title per page ("Events — Bangers Admin")
-- [ ] Git commit: "Polish: loading states, error handling, empty states, responsive design"
-- [ ] **CHECKPOINT**: Full walkthrough — all CRUD, all relationships, media upload, mobile viewport
+- [x] Ensure all loading states work (skeleton tables, spinner on form submit, disabled delete button while deleting)
+- [x] Ensure all API errors handled (422 → form errors, network errors → toast, 404 → toast)
+- [x] Add empty states to all tables ("No events yet. Create your first event to get started." + CTA)
+- [x] Responsive design: sidebar collapses on mobile, tables scroll horizontally, forms stack vertically
+- [x] Active nav states with React Router NavLink
+- [x] Set document.title per page ("Events — Bangers Admin")
+- [x] Git commit: "Polish: loading states, error handling, empty states, responsive design"
+- [x] **CHECKPOINT**: Full walkthrough — all CRUD, all relationships, media upload, mobile viewport
+
+## Phase 10: Dashboard & Overview
+- [x] Create `src/api/dashboard.js` with getDashboardStats()
+- [x] Create `src/hooks/useDashboard.js` with useDashboardStats() hook
+- [x] Create `src/pages/dashboard/DashboardPage.jsx` — stat cards, recent activity, quick actions
+- [x] Update `src/main.jsx` — add DashboardPage as index route (replace Navigate to /events)
+- [x] Update `src/components/layout/AppSidebar.jsx` — add Dashboard as first nav item (LayoutDashboard icon, path: /)
+- [x] Git commit: "Add Dashboard page with stats overview and recent activity"
+- [x] **CHECKPOINT**: Dashboard shows counts, recent items, quick actions all working
+
+## Phase 11: Dark Mode
+- [x] Create `src/components/ThemeProvider.jsx` — wrap next-themes for React (non-Next.js) usage
+- [x] Create `src/components/ThemeToggle.jsx` — Sun/Moon toggle button with dropdown (Light/Dark/System)
+- [x] Update `src/main.jsx` — wrap app with ThemeProvider (attribute="class", defaultTheme="system", enableSystem)
+- [x] Update `src/components/layout/AppSidebar.jsx` — add ThemeToggle to SidebarFooter
+- [x] Verify all components render correctly in dark mode, fix any hardcoded colors
+- [x] Git commit: "Add dark mode with system preference detection and toggle"
+- [x] **CHECKPOINT**: Theme toggle works, OS preference respected, preference persists across reloads
+
+## Phase 12: Global Search (Command Palette)
+- [x] Create `src/hooks/useSearch.js` — useSearch(query) hook using existing search API
+- [x] Create `src/components/shared/CommandPalette.jsx` — shadcn Command dialog with debounced search, grouped results, navigation
+- [x] Update `src/components/layout/AppLayout.jsx` — add Cmd+K keyboard shortcut listener, search button in header, render CommandPalette
+- [x] Git commit: "Add global search command palette with Cmd+K shortcut"
+- [x] **CHECKPOINT**: Cmd+K opens search, typing queries API, results navigate correctly
+
+## Phase 13: UX Improvements
+- [x] Create `src/components/shared/ErrorBoundary.jsx` — class component error boundary with friendly fallback UI
+- [x] Create `src/components/shared/Breadcrumbs.jsx` — route-based breadcrumbs using shadcn Breadcrumb
+- [x] Update `src/main.jsx` — wrap app in ErrorBoundary (outermost wrapper)
+- [x] Update `src/components/layout/AppLayout.jsx` — replace "Bangers Admin" header text with Breadcrumbs
+- [x] Fix `src/pages/stages/StageForm.jsx` — load all events in combobox (add perPage param to getEvents/useEvents)
+- [x] Update `src/api/events.js` — add optional perPage parameter to getEvents
+- [x] Update `src/hooks/useEvents.js` — pass perPage to useEvents hook
+- [x] Add autoFocus to first input in EventForm, ArtistForm, ActForm, StageForm
+- [x] Add unsaved changes warning (isDirty check) to EventForm, ArtistForm, ActForm, StageForm
+- [x] Git commit: "Add error boundary, breadcrumbs, combobox fix, form UX improvements"
+- [x] **CHECKPOINT**: Error boundary catches errors, breadcrumbs show location, forms autofocus, dirty warning works
+
+## Phase 14: Data Quality & Table Enhancements
+- [x] Update `src/components/shared/DataTable.jsx` — add enableRowSelection prop with checkbox column, bulk selection bar, onBulkDelete callback
+- [x] Update `src/components/shared/DataTable.jsx` — add enableColumnVisibility prop with Columns dropdown toggle
+- [x] Update `src/components/shared/DataTable.jsx` — add emptyState ReactNode prop for custom empty states
+- [x] Update EventsPage, ArtistsPage, ActsPage, StagesPage — enable row selection, column visibility, implement onBulkDelete, add custom empty states
+- [x] Update MediaPage — add custom empty state
+- [x] Git commit: "Add bulk delete, column visibility, and improved empty states"
+- [x] **CHECKPOINT**: Bulk selection + delete works, column toggle works, custom empty states render
 
 ## Completed
 - [x] Ralph enabled and configured
 - [x] CLAUDE.md written with full API reference
 - [x] PLAN.md written with detailed implementation plan
+- [x] Phase 0-9 completed (base admin portal fully built)
 
 ## Notes
 - Always read CLAUDE.md for API endpoint details and response shapes
@@ -98,3 +142,7 @@
 - All IDs are UUIDs
 - All deletes are soft deletes returning 204
 - Pagination is 15 items/page, Laravel format
+- next-themes is already installed (in package.json) — just needs wiring up
+- shadcn Command component (cmdk) is already installed — just needs the CommandPalette wrapper
+- The search API endpoint already exists at GET /search — src/api/search.js has the function
+- Dashboard stats endpoint is at GET /dashboard/stats (newly added to backend)

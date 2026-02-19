@@ -21,6 +21,9 @@ export default function ArtistsPage() {
   const [editingArtist, setEditingArtist] = useState(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deletingArtist, setDeletingArtist] = useState(null)
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false)
+  const [bulkDeleteIds, setBulkDeleteIds] = useState([])
+  const [bulkDeleting, setBulkDeleting] = useState(false)
 
   const { data, isLoading } = useArtists(page + 1)
   const deleteArtist = useDeleteArtist()
@@ -107,6 +110,20 @@ export default function ArtistsPage() {
     }
   }
 
+  async function handleBulkDelete() {
+    setBulkDeleting(true)
+    try {
+      await Promise.all(bulkDeleteIds.map((id) => deleteArtist.mutateAsync(id)))
+      toast.success(`${bulkDeleteIds.length} artist(s) deleted`)
+      setBulkDeleteDialogOpen(false)
+      setBulkDeleteIds([])
+    } catch (error) {
+      toast.error(error.message || 'Failed to delete some artists')
+    } finally {
+      setBulkDeleting(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -133,6 +150,12 @@ export default function ArtistsPage() {
         filterColumn="name"
         filterPlaceholder="Filter artists..."
         isLoading={isLoading}
+        enableRowSelection
+        enableColumnVisibility
+        onBulkDelete={(ids) => {
+          setBulkDeleteIds(ids)
+          setBulkDeleteDialogOpen(true)
+        }}
         emptyState={
           <div className="flex flex-col items-center gap-2 py-4">
             <p className="text-muted-foreground">No artists yet.</p>
@@ -165,6 +188,17 @@ export default function ArtistsPage() {
         title="Delete Artist"
         description={`Are you sure you want to delete "${deletingArtist?.name}"? This action cannot be undone.`}
         isDeleting={deleteArtist.isPending}
+      />
+      <DeleteDialog
+        open={bulkDeleteDialogOpen}
+        onOpenChange={(open) => {
+          setBulkDeleteDialogOpen(open)
+          if (!open) setBulkDeleteIds([])
+        }}
+        onConfirm={handleBulkDelete}
+        title="Delete Artists"
+        description={`Are you sure you want to delete ${bulkDeleteIds.length} artist(s)? This action cannot be undone.`}
+        isDeleting={bulkDeleting}
       />
     </div>
   )

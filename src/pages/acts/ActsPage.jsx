@@ -24,6 +24,9 @@ export default function ActsPage() {
   const [editingAct, setEditingAct] = useState(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deletingAct, setDeletingAct] = useState(null)
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false)
+  const [bulkDeleteIds, setBulkDeleteIds] = useState([])
+  const [bulkDeleting, setBulkDeleting] = useState(false)
   const [artistsDialogOpen, setArtistsDialogOpen] = useState(false)
   const [artistsAct, setArtistsAct] = useState(null)
   const [stagesDialogOpen, setStagesDialogOpen] = useState(false)
@@ -135,6 +138,20 @@ export default function ActsPage() {
     }
   }
 
+  async function handleBulkDelete() {
+    setBulkDeleting(true)
+    try {
+      await Promise.all(bulkDeleteIds.map((id) => deleteAct.mutateAsync(id)))
+      toast.success(`${bulkDeleteIds.length} act(s) deleted`)
+      setBulkDeleteDialogOpen(false)
+      setBulkDeleteIds([])
+    } catch (error) {
+      toast.error(error.message || 'Failed to delete some acts')
+    } finally {
+      setBulkDeleting(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -161,6 +178,12 @@ export default function ActsPage() {
         filterColumn="name"
         filterPlaceholder="Filter acts..."
         isLoading={isLoading}
+        enableRowSelection
+        enableColumnVisibility
+        onBulkDelete={(ids) => {
+          setBulkDeleteIds(ids)
+          setBulkDeleteDialogOpen(true)
+        }}
         emptyState={
           <div className="flex flex-col items-center gap-2 py-4">
             <p className="text-muted-foreground">No acts yet.</p>
@@ -209,6 +232,17 @@ export default function ActsPage() {
         title="Delete Act"
         description={`Are you sure you want to delete "${deletingAct?.name}"? This action cannot be undone.`}
         isDeleting={deleteAct.isPending}
+      />
+      <DeleteDialog
+        open={bulkDeleteDialogOpen}
+        onOpenChange={(open) => {
+          setBulkDeleteDialogOpen(open)
+          if (!open) setBulkDeleteIds([])
+        }}
+        onConfirm={handleBulkDelete}
+        title="Delete Acts"
+        description={`Are you sure you want to delete ${bulkDeleteIds.length} act(s)? This action cannot be undone.`}
+        isDeleting={bulkDeleting}
       />
     </div>
   )
