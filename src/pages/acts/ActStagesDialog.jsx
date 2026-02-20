@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { toast } from 'sonner'
 import { Loader2, Trash2, ChevronsUpDown } from 'lucide-react'
 import {
@@ -26,10 +26,11 @@ import { useStages } from '@/hooks/useStages'
 import { useAttachStage, useDetachStage } from '@/hooks/useActs'
 
 export function ActStagesDialog({ open, onOpenChange, act }) {
+  const [search, setSearch] = useState('')
   const [comboboxOpen, setComboboxOpen] = useState(false)
   const [detachingId, setDetachingId] = useState(null)
 
-  const { data: stagesData } = useStages(1)
+  const { data: stagesData } = useStages(1, { search, per_page: -1 })
   const attachStage = useAttachStage()
   const detachStage = useDetachStage()
 
@@ -37,38 +38,69 @@ export function ActStagesDialog({ open, onOpenChange, act }) {
   const allStages = stagesData?.data || []
 
   // Create "Available Editions" - Stage + Event combinations
-  const availableEditions = []
-  allStages.forEach(stage => {
-    const stageEvents = stage.events || []
-    stageEvents.forEach(event => {
-      // Check if this specific combo is already attached
-      const isAttached = currentStages.some(cs => cs.id === stage.id && cs.event_id === event.id)
-      if (!isAttached) {
-        availableEditions.push({
-          stageId: stage.id,
-          stageName: stage.name,
-          eventId: event.id,
-          eventName: event.name
-        })
-      }
-    })
-  })
+  const availableEditions = useMemo(() => {
+    const editions = []
+    allStages.forEach(stage => {
+      const stageEvents = stage.events || []
+      stageEvents.forEach(event => {
+        // Calculate days for the event
+        const start = new Date(event.start_date)
+        const end = new Date(event.end_date)
+        const dayList = []
+        let current = new Date(start)
+        while (current <= end) {
+          dayList.push(new Date(current).toISOString().split('T')[0])
+          current.setDate(current.getDate() + 1)
+        }
 
-  async function handleAttach(stageId, eventId) {
+        dayList.forEach(day => {
+          // Check if this specific combo (stage + event + date) is already attached
+          const isAttached = currentStages.some(cs => 
+            cs.id === stage.id && 
+            cs.pivot?.event_id === event.id && 
+            cs.pivot?.date === day
+          )
+          
+          const dateObj = new Date(day)
+          const dayName = dateObj.toLocaleDateString(undefined, { weekday: 'long' })
+          const dateStr = dateObj.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+          const searchString = `${stage.name} ${event.name} ${dayName} ${dateStr}`.toLowerCase()
+
+          if (!isAttached && (!search || searchString.includes(search.toLowerCase()))) {
+            editions.push({
+              stageId: stage.id,
+              stageName: stage.name,
+              eventId: event.id,
+              eventName: event.name,
+              date: day,
+              dayName,
+              dateStr
+            })
+          }
+        })
+      })
+    })
+
+    // Sort by date DESC (future first)
+    return editions.sort((a, b) => new Date(b.date) - new Date(a.date))
+  }, [allStages, currentStages, search])
+
+  async function handleAttach(stageId, eventId, date) {
     try {
-      await attachStage.mutateAsync({ actId: act.id, stageId, eventId })
+      await attachStage.mutateAsync({ actId: act.id, stageId, event_id: eventId, date })
       toast.success('Stage attached to edition')
       setComboboxOpen(false)
+      setSearch('') // Clear search on attach
     } catch (error) {
       toast.error(error.message || 'Failed to attach stage')
     }
   }
 
-  async function handleDetach(stageId, eventId) {
-    const key = `${stageId}-${eventId}`
+  async function handleDetach(stageId, eventId, date) {
+    const key = `${stageId}-${eventId}-${date}`
     setDetachingId(key)
     try {
-      await detachStage.mutateAsync({ actId: act.id, stageId, eventId })
+      await detachStage.mutateAsync({ actId: act.id, stageId, event_id: eventId, date })
       toast.success('Stage detached from edition')
     } catch (error) {
       toast.error(error.message || 'Failed to detach stage')
@@ -90,9 +122,16 @@ export function ActStagesDialog({ open, onOpenChange, act }) {
               <p className="text-sm text-muted-foreground">No edition-specific stages attached.</p>
             ) : (
               <div className="space-y-2">
-                {currentStages.map((stage) => {
-                  const parentEvent = stage.events?.find(e => e.id === stage.event_id)
-                  const key = `${stage.id}-${stage.event_id}`
+                {[...currentStages]
+                  .sort((a, b) => {
+                    const dateA = a.pivot?.date || ''
+                    const dateB = b.pivot?.date || ''
+                    return new Date(dateB) - new Date(dateA)
+                  })
+                  .map((stage) => {
+                  const parentEvent = stage.events?.find(e => e.id === stage.pivot?.event_id)
+                  const key = `${stage.id}-${stage.pivot?.event_id}-${stage.pivot?.date}`
+                  const dateObj = stage.pivot?.date ? new Date(stage.pivot.date) : null
                   return (
                     <div
                       key={key}
@@ -101,13 +140,13 @@ export function ActStagesDialog({ open, onOpenChange, act }) {
                       <div>
                         <p className="text-sm font-medium">{stage.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          Edition: {parentEvent?.name || 'Unknown'}
+                          {parentEvent?.name} • {dateObj ? dateObj.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' }) : 'All Weekend'}
                         </p>
                       </div>
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleDetach(stage.id, stage.event_id)}
+                        onClick={() => handleDetach(stage.id, stage.pivot?.event_id, stage.pivot?.date)}
                         disabled={detachingId === key}
                       >
                         {detachingId === key ? (
@@ -138,21 +177,25 @@ export function ActStagesDialog({ open, onOpenChange, act }) {
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-full p-0" align="start">
-                <Command>
-                  <CommandInput placeholder="Search stages/events..." />
+                <Command shouldFilter={false}>
+                  <CommandInput 
+                    placeholder="Search stages/events..." 
+                    value={search}
+                    onValueChange={setSearch}
+                  />
                   <CommandList>
                     <CommandEmpty>No available editions found.</CommandEmpty>
                     <CommandGroup>
                       {availableEditions.map((edition) => (
                         <CommandItem
-                          key={`${edition.stageId}-${edition.eventId}`}
-                          value={`${edition.stageName} ${edition.eventName}`}
-                          onSelect={() => handleAttach(edition.stageId, edition.eventId)}
+                          key={`${edition.stageId}-${edition.eventId}-${edition.date}`}
+                          value={`${edition.stageName} ${edition.eventName} ${edition.dayName} ${edition.dateStr}`}
+                          onSelect={() => handleAttach(edition.stageId, edition.eventId, edition.date)}
                         >
                           <div className="flex flex-col">
-                            <span>{edition.stageName}</span>
+                            <span className="font-medium">{edition.stageName}</span>
                             <span className="text-xs text-muted-foreground">
-                              {edition.eventName}
+                              {edition.eventName} • {edition.dayName}, {edition.dateStr}
                             </span>
                           </div>
                         </CommandItem>

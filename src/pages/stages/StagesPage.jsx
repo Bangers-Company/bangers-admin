@@ -25,7 +25,8 @@ export default function StagesPage() {
   const [bulkDeleteIds, setBulkDeleteIds] = useState([])
   const [bulkDeleting, setBulkDeleting] = useState(false)
 
-  const { data, isLoading } = useStages(page + 1)
+  const [search, setSearch] = useState('')
+  const { data, isLoading } = useStages(page + 1, { search })
   const deleteStage = useDeleteStage()
 
   useEffect(() => { document.title = 'Stages — Bangers Admin' }, [])
@@ -149,8 +150,10 @@ export default function StagesPage() {
         pageCount={meta.last_page || 0}
         pageIndex={page}
         onPageChange={setPage}
+        filterValue={search}
+        onFilterChange={setSearch}
         filterColumn="name"
-        filterPlaceholder="Filter stages..."
+        filterPlaceholder="Search stages..."
         isLoading={isLoading}
         enableRowSelection
         enableColumnVisibility

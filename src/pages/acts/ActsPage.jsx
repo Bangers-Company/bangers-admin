@@ -35,7 +35,8 @@ export default function ActsPage() {
   const [eventsDialogOpen, setEventsDialogOpen] = useState(false)
   const [eventsAct, setEventsAct] = useState(null)
 
-  const { data, isLoading } = useActs(page + 1)
+  const [search, setSearch] = useState('')
+  const { data, isLoading } = useActs(page + 1, { search })
   const deleteAct = useDeleteAct()
 
   useEffect(() => { document.title = 'Acts — Bangers Admin' }, [])
@@ -195,8 +196,10 @@ export default function ActsPage() {
         pageCount={meta.last_page || 0}
         pageIndex={page}
         onPageChange={setPage}
+        filterValue={search}
+        onFilterChange={setSearch}
         filterColumn="name"
-        filterPlaceholder="Filter acts..."
+        filterPlaceholder="Search acts..."
         isLoading={isLoading}
         enableRowSelection
         enableColumnVisibility

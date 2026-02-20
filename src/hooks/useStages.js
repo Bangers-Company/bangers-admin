@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { getStages, getStage, createStage, updateStage, deleteStage } from '@/api/stages'
 
-export function useStages(page = 1) {
+export function useStages(page = 1, params = {}) {
   return useQuery({
-    queryKey: ['stages', page],
-    queryFn: () => getStages(page),
+    queryKey: ['stages', page, params],
+    queryFn: () => getStages(page, params),
     placeholderData: keepPreviousData,
   })
 }

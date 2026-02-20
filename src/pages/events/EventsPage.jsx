@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { Plus, MoreHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -29,6 +30,7 @@ export default function EventsPage() {
   const [page, setPage] = useState(0)
   const [formOpen, setFormOpen] = useState(false)
   const [editingEvent, setEditingEvent] = useState(null)
+  const navigate = useNavigate()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deletingEvent, setDeletingEvent] = useState(null)
   const [stagesDialogOpen, setStagesDialogOpen] = useState(false)
@@ -37,7 +39,8 @@ export default function EventsPage() {
   const [bulkDeleteIds, setBulkDeleteIds] = useState([])
   const [bulkDeleting, setBulkDeleting] = useState(false)
 
-  const { data, isLoading } = useEvents(page + 1)
+  const [search, setSearch] = useState('')
+  const { data, isLoading } = useEvents(page + 1, { search })
   const deleteEvent = useDeleteEvent()
 
   useEffect(() => { document.title = 'Events — Bangers Admin' }, [])
@@ -113,6 +116,11 @@ export default function EventsPage() {
                 Manage Stages
               </DropdownMenuItem>
               <DropdownMenuItem
+                onClick={() => navigate(`/events/${event.id}/lineup`)}
+              >
+                Show Line-up
+              </DropdownMenuItem>
+              <DropdownMenuItem
                 className="text-destructive"
                 onClick={() => {
                   setDeletingEvent(event)
@@ -176,8 +184,10 @@ export default function EventsPage() {
         pageCount={meta.last_page || 0}
         pageIndex={page}
         onPageChange={setPage}
+        filterValue={search}
+        onFilterChange={setSearch}
         filterColumn="name"
-        filterPlaceholder="Filter events..."
+        filterPlaceholder="Search events..."
         isLoading={isLoading}
         enableRowSelection
         enableColumnVisibility

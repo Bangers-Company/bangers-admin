@@ -25,7 +25,8 @@ export default function ArtistsPage() {
   const [bulkDeleteIds, setBulkDeleteIds] = useState([])
   const [bulkDeleting, setBulkDeleting] = useState(false)
 
-  const { data, isLoading } = useArtists(page + 1)
+  const [search, setSearch] = useState('')
+  const { data, isLoading } = useArtists(page + 1, { search })
   const deleteArtist = useDeleteArtist()
 
   useEffect(() => { document.title = 'Artists — Bangers Admin' }, [])
@@ -147,8 +148,10 @@ export default function ArtistsPage() {
         pageCount={meta.last_page || 0}
         pageIndex={page}
         onPageChange={setPage}
+        filterValue={search}
+        onFilterChange={setSearch}
         filterColumn="name"
-        filterPlaceholder="Filter artists..."
+        filterPlaceholder="Search artists..."
         isLoading={isLoading}
         enableRowSelection
         enableColumnVisibility

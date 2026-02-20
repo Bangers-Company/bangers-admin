@@ -26,18 +26,22 @@ import { useEvents } from '@/hooks/useEvents'
 import { useAttachEvent, useDetachEvent } from '@/hooks/useActs'
 
 export function ActEventsDialog({ open, onOpenChange, act }) {
+  const [search, setSearch] = useState('')
   const [comboboxOpen, setComboboxOpen] = useState(false)
   const [detachingId, setDetachingId] = useState(null)
 
-  const { data: eventsData } = useEvents(1)
+  const { data: eventsData } = useEvents(1, { search, per_page: -1 })
   const attachEvent = useAttachEvent()
   const detachEvent = useDetachEvent()
 
   const currentEvents = act?.events || []
   const allEvents = eventsData?.data || []
-  const availableEvents = allEvents.filter(
-    (e) => !currentEvents.some((ce) => ce.id === e.id)
-  )
+  const availableEvents = allEvents
+    .filter((e) => !currentEvents.some((ce) => ce.id === e.id))
+    .sort((a, b) => {
+      if (!a.start_date || !b.start_date) return 0
+      return new Date(b.start_date) - new Date(a.start_date)
+    })
 
   async function handleAttach(eventId) {
     try {
@@ -118,8 +122,12 @@ export function ActEventsDialog({ open, onOpenChange, act }) {
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-full p-0" align="start">
-                <Command>
-                  <CommandInput placeholder="Search events..." />
+                <Command shouldFilter={false}>
+                  <CommandInput 
+                    placeholder="Search events..." 
+                    value={search}
+                    onValueChange={setSearch}
+                  />
                   <CommandList>
                     <CommandEmpty>No events found.</CommandEmpty>
                     <CommandGroup>

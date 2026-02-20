@@ -6,10 +6,10 @@ import {
   attachEventToAct, detachEventFromAct,
 } from '@/api/acts'
 
-export function useActs(page = 1) {
+export function useActs(page = 1, params = {}) {
   return useQuery({
-    queryKey: ['acts', page],
-    queryFn: () => getActs(page),
+    queryKey: ['acts', page, params],
+    queryFn: () => getActs(page, params),
     placeholderData: keepPreviousData,
   })
 }

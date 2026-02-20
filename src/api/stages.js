@@ -1,7 +1,7 @@
 import { apiClient } from './client'
 
-export function getStages(page = 1) {
-  return apiClient.get('/stages', { page })
+export function getStages(page = 1, params = {}) {
+  return apiClient.get('/stages', { page, ...params })
 }
 
 export function getStage(id) {

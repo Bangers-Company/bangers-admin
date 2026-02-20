@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { getArtists, getArtist, createArtist, updateArtist, deleteArtist } from '@/api/artists'
 
-export function useArtists(page = 1) {
+export function useArtists(page = 1, params = {}) {
   return useQuery({
-    queryKey: ['artists', page],
-    queryFn: () => getArtists(page),
+    queryKey: ['artists', page, params],
+    queryFn: () => getArtists(page, params),
     placeholderData: keepPreviousData,
   })
 }

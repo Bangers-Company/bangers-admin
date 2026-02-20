@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { getEvents, getEvent, createEvent, updateEvent, deleteEvent } from '@/api/events'
 
-export function useEvents(page = 1, perPage) {
+export function useEvents(page = 1, params = {}) {
   return useQuery({
-    queryKey: ['events', page, perPage],
-    queryFn: () => getEvents(page, perPage),
+    queryKey: ['events', page, params],
+    queryFn: () => getEvents(page, params),
     placeholderData: keepPreviousData,
   })
 }
