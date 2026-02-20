@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
 import { Loader2, Check, ChevronsUpDown } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import {
   Dialog,
   DialogContent,
@@ -39,7 +40,7 @@ import { useEvents } from '@/hooks/useEvents'
 import { useCreateStage, useUpdateStage } from '@/hooks/useStages'
 
 const stageSchema = z.object({
-  event_id: z.string().min(1, 'Must select an event'),
+  event_id: z.string().optional(),
   name: z.string().min(1, 'Name is required').max(255),
   description: z.string().optional().default(''),
 })
@@ -62,7 +63,7 @@ export function StageForm({ open, onOpenChange, stage }) {
   useEffect(() => {
     if (stage) {
       form.reset({
-        event_id: stage.event_id || '',
+        event_id: '', // Reset for new associations or leave blank
         name: stage.name || '',
         description: stage.description || '',
       })
@@ -73,7 +74,7 @@ export function StageForm({ open, onOpenChange, stage }) {
 
   async function onSubmit(values) {
     const data = {
-      event_id: values.event_id,
+      event_id: values.event_id || null,
       name: values.name,
       description: values.description || null,
     }
@@ -83,6 +84,10 @@ export function StageForm({ open, onOpenChange, stage }) {
         await updateStage.mutateAsync({ id: stage.id, data })
         toast.success('Stage updated')
       } else {
+        if (!values.event_id) {
+          toast.error('Event is required for new stages')
+          return
+        }
         await createStage.mutateAsync(data)
         toast.success('Stage created')
       }
@@ -120,64 +125,75 @@ export function StageForm({ open, onOpenChange, stage }) {
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="event_id"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Event</FormLabel>
-                  <Popover open={eventComboboxOpen} onOpenChange={setEventComboboxOpen}>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          className={cn(
-                            'w-full justify-between',
-                            !field.value && 'text-muted-foreground'
-                          )}
-                          disabled={isEditing}
-                        >
-                          {selectedEvent?.name || 'Select an event...'}
-                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-full p-0" align="start">
-                      <Command>
-                        <CommandInput placeholder="Search events..." />
-                        <CommandList>
-                          <CommandEmpty>No events found.</CommandEmpty>
-                          <CommandGroup>
-                            {events.map((event) => (
-                              <CommandItem
-                                key={event.id}
-                                value={event.name}
-                                onSelect={() => {
-                                  form.setValue('event_id', event.id)
-                                  setEventComboboxOpen(false)
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    'mr-2 h-4 w-4',
-                                    event.id === field.value
-                                      ? 'opacity-100'
-                                      : 'opacity-0'
-                                  )}
-                                />
-                                {event.name}
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {!isEditing && (
+              <FormField
+                control={form.control}
+                name="event_id"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Initial Event</FormLabel>
+                    <Popover open={eventComboboxOpen} onOpenChange={setEventComboboxOpen}>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className={cn(
+                              'w-full justify-between',
+                              !field.value && 'text-muted-foreground'
+                            )}
+                          >
+                            {selectedEvent?.name || 'Select an event...'}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder="Search events..." />
+                          <CommandList>
+                            <CommandEmpty>No events found.</CommandEmpty>
+                            <CommandGroup>
+                              {events.map((event) => (
+                                <CommandItem
+                                  key={event.id}
+                                  value={event.name}
+                                  onSelect={() => {
+                                    form.setValue('event_id', event.id)
+                                    setEventComboboxOpen(false)
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      'mr-2 h-4 w-4',
+                                      event.id === field.value
+                                        ? 'opacity-100'
+                                        : 'opacity-0'
+                                    )}
+                                  />
+                                  {event.name}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+            {isEditing && stage.events && (
+              <div className="space-y-2">
+                <FormLabel>Associated Events</FormLabel>
+                <div className="flex flex-wrap gap-1 border p-2 rounded-md">
+                  {stage.events.map(e => (
+                    <Badge key={e.id} variant="outline">{e.name}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
             <FormField
               control={form.control}
               name="name"

@@ -28,10 +28,18 @@ export function detachArtistFromAct(actId, artistId) {
   return apiClient.del(`/acts/${actId}/artists`, { artist_id: artistId })
 }
 
-export function attachStageToAct(actId, stageId) {
-  return apiClient.post(`/acts/${actId}/stages`, { stage_id: stageId })
+export function attachStageToAct(actId, stageId, eventId) {
+  return apiClient.post(`/acts/${actId}/stages`, { stage_id: stageId, event_id: eventId })
 }
 
-export function detachStageFromAct(actId, stageId) {
-  return apiClient.del(`/acts/${actId}/stages`, { stage_id: stageId })
+export function detachStageFromAct(actId, stageId, eventId) {
+  return apiClient.del(`/acts/${actId}/stages`, { stage_id: stageId, event_id: eventId })
+}
+
+export function attachEventToAct(actId, eventId) {
+  return apiClient.post(`/acts/${actId}/events`, { event_id: eventId })
+}
+
+export function detachEventFromAct(actId, eventId) {
+  return apiClient.del(`/acts/${actId}/events`, { event_id: eventId })
 }
