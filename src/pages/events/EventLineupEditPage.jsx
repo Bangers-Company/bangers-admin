@@ -303,7 +303,6 @@ export default function EventLineupEditPage() {
     }))
     
     toast.success(`Added ${act.name} to Uncategorized`)
-    setAddActModalOpen(false)
   }
 
   const handleDragStart = (event) => {
