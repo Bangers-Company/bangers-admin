@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { Plus, MoreHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,9 +39,21 @@ export default function StagesPage() {
       header: ({ column }) => <SortableHeader column={column}>Name</SortableHeader>,
     },
     {
-      id: 'event',
-      header: 'Event',
-      cell: ({ row }) => row.original.event?.name || '—',
+      id: 'events',
+      header: 'Events',
+      cell: ({ row }) => {
+        const events = row.original.events || []
+        if (events.length === 0) return '—'
+        return (
+          <div className="flex flex-wrap gap-1">
+            {events.map((event) => (
+              <Badge key={event.id} variant="secondary" className="text-[10px] px-1 py-0">
+                {event.name}
+              </Badge>
+            ))}
+          </div>
+        )
+      },
     },
     {
       accessorKey: 'description',

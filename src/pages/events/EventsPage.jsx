@@ -75,6 +75,15 @@ export default function EventsPage() {
       ),
     },
     {
+      id: 'acts',
+      header: 'Acts',
+      cell: ({ row }) => (
+        <Badge variant="secondary">
+          {row.original.acts?.length || 0}
+        </Badge>
+      ),
+    },
+    {
       id: 'actions',
       header: '',
       cell: ({ row }) => {

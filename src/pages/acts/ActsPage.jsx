@@ -16,6 +16,7 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { ActForm } from './ActForm'
 import { ActArtistsDialog } from './ActArtistsDialog'
 import { ActStagesDialog } from './ActStagesDialog'
+import { ActEventsDialog } from './ActEventsDialog'
 import { useActs, useDeleteAct } from '@/hooks/useActs'
 
 export default function ActsPage() {
@@ -31,6 +32,8 @@ export default function ActsPage() {
   const [artistsAct, setArtistsAct] = useState(null)
   const [stagesDialogOpen, setStagesDialogOpen] = useState(false)
   const [stagesAct, setStagesAct] = useState(null)
+  const [eventsDialogOpen, setEventsDialogOpen] = useState(false)
+  const [eventsAct, setEventsAct] = useState(null)
 
   const { data, isLoading } = useActs(page + 1)
   const deleteAct = useDeleteAct()
@@ -73,6 +76,15 @@ export default function ActsPage() {
       ),
     },
     {
+      id: 'events',
+      header: 'Events',
+      cell: ({ row }) => (
+        <Badge variant="secondary">
+          {row.original.events?.length || 0}
+        </Badge>
+      ),
+    },
+    {
       id: 'actions',
       header: '',
       cell: ({ row }) => {
@@ -109,6 +121,14 @@ export default function ActsPage() {
                 }}
               >
                 Manage Stages
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  setEventsAct(act)
+                  setEventsDialogOpen(true)
+                }}
+              >
+                Manage Events
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -221,6 +241,14 @@ export default function ActsPage() {
           if (!open) setStagesAct(null)
         }}
         act={stagesAct}
+      />
+      <ActEventsDialog
+        open={eventsDialogOpen}
+        onOpenChange={(open) => {
+          setEventsDialogOpen(open)
+          if (!open) setEventsAct(null)
+        }}
+        act={eventsAct}
       />
       <DeleteDialog
         open={deleteDialogOpen}
