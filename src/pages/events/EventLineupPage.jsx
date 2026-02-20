@@ -4,16 +4,52 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, ArrowLeft, Users } from 'lucide-react'
+import { Loader2, ArrowLeft, Users, Calendar } from 'lucide-react'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useState, useMemo } from 'react'
 
 export default function EventLineupPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { data: response, isLoading } = useEvent(id)
-
   const event = response?.data
-  const stages = event?.stages || []
+
+  const days = useMemo(() => {
+    if (!event) return []
+    const start = new Date(event.start_date)
+    const end = new Date(event.end_date)
+    const dayList = []
+    let current = new Date(start)
+    while (current <= end) {
+      dayList.push(new Date(current).toISOString().split('T')[0])
+      current.setDate(current.getDate() + 1)
+    }
+    return dayList
+  }, [event])
+
+  const [selectedDay, setSelectedDay] = useState('')
+
+  // Initialize selectedDay to the first day of the event
+  useMemo(() => {
+    if (days.length > 0 && !selectedDay) {
+      setSelectedDay(days[0])
+    }
+  }, [days, selectedDay])
+
   const acts = event?.acts || []
+  const filteredActs = useMemo(() => {
+    if (!selectedDay) return acts
+    // If an act has a date pivot, it MUST match exactly.
+    // If it doesn't have a date pivot, it might be a general event attachment (legacy or intentional)
+    // We'll show acts that MATCH the selected date or have NO date assigned if it's the only day.
+    return acts.filter(act => {
+      if (act.date) {
+        return act.date === selectedDay
+      }
+      // If event has only one day, show it. Otherwise, acts without dates are "uncategorized" or "all-weekend"
+      return days.length === 1
+    })
+  }, [acts, selectedDay, days])
 
   if (isLoading) {
     return (
@@ -32,16 +68,16 @@ export default function EventLineupPage() {
     )
   }
 
-  // Group acts by stage
+  const stages = event?.stages || []
   const lineup = stages.map(stage => {
     return {
       ...stage,
-      acts: acts.filter(act => act.stage_id === stage.id)
+      acts: filteredActs.filter(act => act.stage_id === stage.id)
     }
   })
 
   // Acts without a stage
-  const uncategorizedActs = acts.filter(act => !act.stage_id)
+  const uncategorizedActs = filteredActs.filter(act => !act.stage_id)
 
   return (
     <div className="space-y-6">
@@ -54,6 +90,30 @@ export default function EventLineupPage() {
           description={`${event.location} • ${new Date(event.start_date).toLocaleDateString()}`}
         />
       </div>
+
+      {days.length > 1 && (
+        <Tabs value={selectedDay} onValueChange={setSelectedDay} className="w-full">
+          <TabsList className="bg-muted/50 p-1 h-12 w-full">
+            {days.map((day) => {
+              const dateObj = new Date(day)
+              const dayName = dateObj.toLocaleDateString(undefined, { weekday: 'long' })
+              const dateStr = dateObj.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+              return (
+                <TabsTrigger 
+                  key={day} 
+                  value={day}
+                  className="flex-1 px-6 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                >
+                  <div className="flex flex-col items-center gap-0.5">
+                    <span className="text-[10px] uppercase font-bold tracking-wider opacity-80">{dayName}</span>
+                    <span className="text-sm font-bold">{dateStr}</span>
+                  </div>
+                </TabsTrigger>
+              )
+            })}
+          </TabsList>
+        </Tabs>
+      )}
 
       <div className="w-full overflow-x-auto rounded-md border bg-muted/20 pb-4">
         <div className="flex p-4 gap-6">
