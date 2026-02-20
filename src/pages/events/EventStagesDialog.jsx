@@ -37,6 +37,7 @@ import {
 } from '@/components/ui/command'
 import { useEvent } from '@/hooks/useEvents'
 import { useStages, useCreateStage, useDeleteStage } from '@/hooks/useStages'
+import { useEffect } from 'react'
 
 const stageSchema = z.object({
   name: z.string().min(1, 'Name is required').max(255),
@@ -44,8 +45,9 @@ const stageSchema = z.object({
 })
 
 export function EventStagesDialog({ open, onOpenChange, event }) {
+  const [search, setSearch] = useState('')
   const { data: eventData } = useEvent(event?.id)
-  const { data: allStagesData } = useStages(1)
+  const { data: allStagesData } = useStages(1, { search, per_page: -1 })
   const createStage = useCreateStage()
   const deleteStage = useDeleteStage()
   
@@ -171,8 +173,12 @@ export function EventStagesDialog({ open, onOpenChange, event }) {
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-full p-0" align="start">
-                <Command>
-                  <CommandInput placeholder="Search stages..." />
+                <Command shouldFilter={false}>
+                  <CommandInput 
+                    placeholder="Search stages..." 
+                    value={search}
+                    onValueChange={setSearch}
+                  />
                   <CommandList>
                     <CommandEmpty>No other stages found.</CommandEmpty>
                     <CommandGroup>

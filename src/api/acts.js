@@ -1,7 +1,7 @@
 import { apiClient } from './client'
 
-export function getActs(page = 1) {
-  return apiClient.get('/acts', { page })
+export function getActs(page = 1, params = {}) {
+  return apiClient.get('/acts', { page, ...params })
 }
 
 export function getAct(id) {

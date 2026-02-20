@@ -1,7 +1,7 @@
 import { apiClient } from './client'
 
-export function getArtists(page = 1) {
-  return apiClient.get('/artists', { page })
+export function getArtists(page = 1, params = {}) {
+  return apiClient.get('/artists', { page, ...params })
 }
 
 export function getArtist(id) {

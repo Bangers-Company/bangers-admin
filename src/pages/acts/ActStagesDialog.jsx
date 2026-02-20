@@ -26,10 +26,11 @@ import { useStages } from '@/hooks/useStages'
 import { useAttachStage, useDetachStage } from '@/hooks/useActs'
 
 export function ActStagesDialog({ open, onOpenChange, act }) {
+  const [search, setSearch] = useState('')
   const [comboboxOpen, setComboboxOpen] = useState(false)
   const [detachingId, setDetachingId] = useState(null)
 
-  const { data: stagesData } = useStages(1)
+  const { data: stagesData } = useStages(1, { search, per_page: -1 })
   const attachStage = useAttachStage()
   const detachStage = useDetachStage()
 
@@ -43,15 +44,27 @@ export function ActStagesDialog({ open, onOpenChange, act }) {
     stageEvents.forEach(event => {
       // Check if this specific combo is already attached
       const isAttached = currentStages.some(cs => cs.id === stage.id && cs.event_id === event.id)
-      if (!isAttached) {
+      
+      const matchesSearch = !search || 
+        stage.name.toLowerCase().includes(search.toLowerCase()) || 
+        event.name.toLowerCase().includes(search.toLowerCase())
+
+      if (!isAttached && matchesSearch) {
         availableEditions.push({
           stageId: stage.id,
           stageName: stage.name,
           eventId: event.id,
-          eventName: event.name
+          eventName: event.name,
+          startDate: event.start_date
         })
       }
     })
+  })
+
+  // Sort by start date DESC (future first)
+  const sortedEditions = [...availableEditions].sort((a, b) => {
+    if (!a.startDate || !b.startDate) return 0
+    return new Date(b.startDate) - new Date(a.startDate)
   })
 
   async function handleAttach(stageId, eventId) {
@@ -59,6 +72,7 @@ export function ActStagesDialog({ open, onOpenChange, act }) {
       await attachStage.mutateAsync({ actId: act.id, stageId, eventId })
       toast.success('Stage attached to edition')
       setComboboxOpen(false)
+      setSearch('') // Clear search on attach
     } catch (error) {
       toast.error(error.message || 'Failed to attach stage')
     }
@@ -90,7 +104,14 @@ export function ActStagesDialog({ open, onOpenChange, act }) {
               <p className="text-sm text-muted-foreground">No edition-specific stages attached.</p>
             ) : (
               <div className="space-y-2">
-                {currentStages.map((stage) => {
+                {[...currentStages]
+                  .sort((a, b) => {
+                    const eventA = a.events?.find(e => e.id === a.event_id)
+                    const eventB = b.events?.find(e => e.id === b.event_id)
+                    if (!eventA?.start_date || !eventB?.start_date) return 0
+                    return new Date(eventB.start_date) - new Date(eventA.start_date)
+                  })
+                  .map((stage) => {
                   const parentEvent = stage.events?.find(e => e.id === stage.event_id)
                   const key = `${stage.id}-${stage.event_id}`
                   return (
@@ -138,12 +159,16 @@ export function ActStagesDialog({ open, onOpenChange, act }) {
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-full p-0" align="start">
-                <Command>
-                  <CommandInput placeholder="Search stages/events..." />
+                <Command shouldFilter={false}>
+                  <CommandInput 
+                    placeholder="Search stages/events..." 
+                    value={search}
+                    onValueChange={setSearch}
+                  />
                   <CommandList>
                     <CommandEmpty>No available editions found.</CommandEmpty>
                     <CommandGroup>
-                      {availableEditions.map((edition) => (
+                      {sortedEditions.map((edition) => (
                         <CommandItem
                           key={`${edition.stageId}-${edition.eventId}`}
                           value={`${edition.stageName} ${edition.eventName}`}

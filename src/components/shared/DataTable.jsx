@@ -39,6 +39,8 @@ export function DataTable({
   enableRowSelection = false,
   enableColumnVisibility = false,
   onBulkDelete,
+  filterValue,
+  onFilterChange,
 }) {
   const [sorting, setSorting] = useState([])
   const [columnFilters, setColumnFilters] = useState([])
@@ -89,8 +91,10 @@ export function DataTable({
     onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     manualPagination: true,
+    manualFiltering: !!onFilterChange,
     enableRowSelection,
   })
 
@@ -103,10 +107,14 @@ export function DataTable({
         {filterColumn && (
           <Input
             placeholder={filterPlaceholder}
-            value={table.getColumn(filterColumn)?.getFilterValue() ?? ''}
-            onChange={(e) =>
-              table.getColumn(filterColumn)?.setFilterValue(e.target.value)
-            }
+            value={onFilterChange ? filterValue : (table.getColumn(filterColumn)?.getFilterValue() ?? '')}
+            onChange={(e) => {
+              if (onFilterChange) {
+                onFilterChange(e.target.value)
+              } else {
+                table.getColumn(filterColumn)?.setFilterValue(e.target.value)
+              }
+            }}
             className="max-w-sm"
           />
         )}

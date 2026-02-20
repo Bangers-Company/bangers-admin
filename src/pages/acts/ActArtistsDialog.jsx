@@ -27,10 +27,11 @@ import { useArtists } from '@/hooks/useArtists'
 import { useAttachArtist, useDetachArtist } from '@/hooks/useActs'
 
 export function ActArtistsDialog({ open, onOpenChange, act }) {
+  const [search, setSearch] = useState('')
   const [comboboxOpen, setComboboxOpen] = useState(false)
   const [detachingId, setDetachingId] = useState(null)
 
-  const { data: artistsData } = useArtists(1)
+  const { data: artistsData } = useArtists(1, { search, per_page: -1 })
   const attachArtist = useAttachArtist()
   const detachArtist = useDetachArtist()
 
@@ -119,8 +120,12 @@ export function ActArtistsDialog({ open, onOpenChange, act }) {
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-full p-0" align="start">
-                <Command>
-                  <CommandInput placeholder="Search artists..." />
+                <Command shouldFilter={false}>
+                  <CommandInput 
+                    placeholder="Search artists..." 
+                    value={search}
+                    onValueChange={setSearch}
+                  />
                   <CommandList>
                     <CommandEmpty>No artists found.</CommandEmpty>
                     <CommandGroup>
