@@ -81,14 +81,19 @@ export default function EventLineupPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/events')}>
-          <ArrowLeft className="h-4 w-4" />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/events')}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <PageHeader 
+            title={`Line-up: ${event.name}`} 
+            description={`${event.location} • ${new Date(event.start_date).toLocaleDateString()}`}
+          />
+        </div>
+        <Button onClick={() => navigate(`/events/${event.id}/lineup/edit`)}>
+          Edit Lineup
         </Button>
-        <PageHeader 
-          title={`Line-up: ${event.name}`} 
-          description={`${event.location} • ${new Date(event.start_date).toLocaleDateString()}`}
-        />
       </div>
 
       {days.length > 1 && (
@@ -116,7 +121,7 @@ export default function EventLineupPage() {
       )}
 
       <div className="w-full overflow-x-auto rounded-md border bg-muted/20 pb-4">
-        <div className="flex p-4 gap-6">
+        <div className="flex p-4 gap-6 min-w-max">
           {lineup.map((column) => (
             <div key={column.id} className="flex flex-col gap-4 w-[300px] shrink-0">
               <div className="px-1">

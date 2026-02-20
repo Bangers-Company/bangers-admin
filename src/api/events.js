@@ -17,5 +17,9 @@ export function updateEvent(id, data) {
 }
 
 export function deleteEvent(id) {
-  return apiClient.del(`/events/${id}`)
+  return apiClient.delete(`/events/${id}`)
+}
+
+export function syncEventLineup(id, data) {
+  return apiClient.post(`/events/${id}/lineup-sync`, data)
 }

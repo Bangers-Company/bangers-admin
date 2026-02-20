@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
-import { getEvents, getEvent, createEvent, updateEvent, deleteEvent } from '@/api/events'
+import { getEvents, getEvent, createEvent, updateEvent, deleteEvent, syncEventLineup } from '@/api/events'
 
 export function useEvents(page = 1, params = {}) {
   return useQuery({
@@ -44,6 +44,16 @@ export function useDeleteEvent() {
     mutationFn: (id) => deleteEvent(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] })
+    },
+  })
+}
+
+export function useSyncEventLineup() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, lineup }) => syncEventLineup(id, { lineup }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['events', variables.id] })
     },
   })
 }
