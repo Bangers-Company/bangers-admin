@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
-import { Loader2, Edit, Save, Camera, User as UserIcon } from 'lucide-react'
+import { Loader2, Edit, Save, Camera, Trash2, User as UserIcon } from 'lucide-react'
 import { uploadMedia } from '@/api/media'
 import { useRef } from 'react'
 
@@ -111,6 +111,22 @@ export default function UserDetailPage() {
     }
   }
 
+  const handleRemovePicture = async () => {
+    if (!window.confirm('Are you sure you want to remove the profile picture?')) return
+
+    setUploading(true)
+    try {
+      await userApi.update(id, { profile_media_id: null })
+      toast.success('Profile picture removed')
+      fetchData()
+    } catch (error) {
+      console.error('Failed to remove profile picture', error)
+      toast.error('Failed to remove profile picture')
+    } finally {
+      setUploading(false)
+    }
+  }
+
   if (loading) return <div className="p-8">Loading user details...</div>
   if (!user) return <div className="p-8 text-center">User not found</div>
 
@@ -152,8 +168,8 @@ export default function UserDetailPage() {
             />
             <CardTitle className="mt-4 text-xl">{user.first_name} {user.last_name}</CardTitle>
             <CardDescription>@{user.username}</CardDescription>
-            <div className="mt-4 flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => setIsEditDialogOpen(true)}>
+            <div className="mt-4 flex flex-col items-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => setIsEditDialogOpen(true)} className="w-full">
                 <Edit className="mr-2 h-4 w-4" />
                 Edit Profile
               </Button>
@@ -282,15 +298,30 @@ export default function UserDetailPage() {
               <Checkbox id="is_public" name="is_public" defaultChecked={user.is_public} />
               <Label htmlFor="is_public">Public Profile</Label>
             </div>
-            <div className="flex justify-end gap-3 mt-4">
-              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={updating}>
-                {updating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                <Save className="mr-2 h-4 w-4" />
-                Save Changes
-              </Button>
+            <div className="flex items-center justify-between mt-4">
+              {user.profile_media_id ? (
+                <Button 
+                  type="button"
+                  variant="ghost" 
+                  size="sm"
+                  className="text-xs text-destructive hover:text-destructive hover:bg-destructive/10 h-8 px-2" 
+                  onClick={handleRemovePicture}
+                  disabled={uploading}
+                >
+                  <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                  Remove Picture
+                </Button>
+              ) : <div />}
+              <div className="flex gap-3">
+                <Button type="button" variant="outline" size="sm" onClick={() => setIsEditDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" size="sm" disabled={updating}>
+                  {updating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  <Save className="mr-2 h-4 w-4" />
+                  Save Changes
+                </Button>
+              </div>
             </div>
           </form>
         </DialogContent>
