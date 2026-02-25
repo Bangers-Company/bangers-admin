@@ -7,6 +7,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { userApi } from '@/api/user'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
+import { toast } from 'sonner'
+import { Loader2, Edit, Save, Camera, User as UserIcon } from 'lucide-react'
+import { uploadMedia } from '@/api/media'
+import { useRef } from 'react'
 
 export default function UserDetailPage() {
   const { id } = useParams()
@@ -15,25 +30,86 @@ export default function UserDetailPage() {
   const [events, setEvents] = useState([])
   const [friends, setFriends] = useState([])
   const [loading, setLoading] = useState(true)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [updating, setUpdating] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef(null)
+
+  const fetchData = async () => {
+    setLoading(true)
+    try {
+      const [userResponse, eventsResponse, friendsResponse] = await Promise.all([
+        userApi.get(id),
+        userApi.getEvents(id).catch(() => ({ data: [] })),
+        userApi.getFriends(id).catch(() => ({ data: [] }))
+      ])
+      
+      const userData = userResponse?.data || userResponse
+      if (!userData || !userData.id) {
+        throw new Error('User data is invalid')
+      }
+      
+      setUser(userData)
+      setEvents(eventsResponse?.data || eventsResponse || [])
+      setFriends(friendsResponse?.data || friendsResponse || [])
+    } catch (error) {
+      console.error('Failed to fetch user details:', error)
+      toast.error(error.message || 'Failed to fetch user details')
+      setUser(null)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true)
-      try {
-        const [userData, eventData, friendData] = await Promise.all([
-          userApi.get(id),
-          userApi.getEvents(id),
-          userApi.getFriends(id).catch(() => ({ data: [] }))
-        ])
-        setUser(userData.data || userData)
-        setEvents(eventData.data || [])
-        setFriends(friendData.data || [])
-      } finally {
-        setLoading(false)
-      }
-    }
     fetchData()
   }, [id])
+
+  const handleUpdateUser = async (e) => {
+    e.preventDefault()
+    setUpdating(true)
+    const formData = new FormData(e.target)
+    const payload = {
+      ...Object.fromEntries(formData.entries()),
+      is_public: formData.get('is_public') === 'on'
+    }
+    
+    try {
+      await userApi.update(id, payload)
+      toast.success('Profile updated successfully')
+      setIsEditDialogOpen(false)
+      fetchData()
+    } catch (error) {
+      console.error('Failed to update user', error)
+      toast.error(error.message || 'Failed to update user')
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  const handleProfilePictureClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploading(true)
+    try {
+      const response = await uploadMedia(file, 'profile_picture')
+      const mediaId = response.data?.id || response.id
+      
+      await userApi.update(id, { profile_media_id: mediaId })
+      toast.success('Profile picture updated')
+      fetchData()
+    } catch (error) {
+      console.error('Failed to upload profile picture', error)
+      toast.error('Failed to upload profile picture')
+    } finally {
+      setUploading(false)
+    }
+  }
 
   if (loading) return <div className="p-8">Loading user details...</div>
   if (!user) return <div className="p-8 text-center">User not found</div>
@@ -48,11 +124,40 @@ export default function UserDetailPage() {
       <div className="grid gap-6 md:grid-cols-3">
         <Card className="md:col-span-1">
           <CardHeader className="flex flex-col items-center">
-            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-muted">
-              <User className="h-12 w-12" />
+            <div 
+              className="group relative flex h-24 w-24 cursor-pointer items-center justify-center rounded-full bg-muted overflow-hidden border-2 border-transparent hover:border-primary transition-all"
+              onClick={handleProfilePictureClick}
+            >
+              {user.profile_media_url ? (
+                <img src={user.profile_media_url} alt={user.username} className="h-full w-full object-cover" />
+              ) : (
+                <UserIcon className="h-12 w-12" />
+              )}
+              {uploading ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                  <Loader2 className="h-8 w-8 animate-spin text-white" />
+                </div>
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Camera className="h-8 w-8 text-white" />
+                </div>
+              )}
             </div>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              className="hidden" 
+              accept="image/*" 
+              onChange={handleFileChange} 
+            />
             <CardTitle className="mt-4 text-xl">{user.first_name} {user.last_name}</CardTitle>
             <CardDescription>@{user.username}</CardDescription>
+            <div className="mt-4 flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => setIsEditDialogOpen(true)}>
+                <Edit className="mr-2 h-4 w-4" />
+                Edit Profile
+              </Button>
+            </div>
             <div className="mt-4 flex flex-wrap justify-center gap-1">
               {user.roles?.map(role => (
                 <Badge key={role.id}>{role.name}</Badge>
@@ -137,6 +242,59 @@ export default function UserDetailPage() {
           </Tabs>
         </Card>
       </div>
+
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit Profile</DialogTitle>
+            <DialogDescription>
+              Update user details. Some fields are read-only due to backend restrictions.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleUpdateUser} className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="first_name">First Name</Label>
+                <Input id="first_name" name="first_name" defaultValue={user.first_name} required />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="last_name">Last Name</Label>
+                <Input id="last_name" name="last_name" defaultValue={user.last_name} required />
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="username">Username</Label>
+              <Input id="username" name="username" defaultValue={user.username} required />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" name="email" type="email" defaultValue={user.email} required />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="dob">Date of Birth</Label>
+              <Input id="dob" name="dob" type="date" defaultValue={user.dob ? user.dob.split('T')[0] : ''} required />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="bio">Bio</Label>
+              <Textarea id="bio" name="bio" defaultValue={user.bio} placeholder="Enter user bio..." />
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox id="is_public" name="is_public" defaultChecked={user.is_public} />
+              <Label htmlFor="is_public">Public Profile</Label>
+            </div>
+            <div className="flex justify-end gap-3 mt-4">
+              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={updating}>
+                {updating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Save className="mr-2 h-4 w-4" />
+                Save Changes
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

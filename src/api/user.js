@@ -1,6 +1,10 @@
 import { apiClient } from './client'
 
 export const userApi = {
+  async create(data) {
+    return apiClient.post('/auth/register', data)
+  },
+
   async list(params) {
     return apiClient.get('/users', params)
   },
@@ -28,5 +32,13 @@ export const userApi = {
     // Actually, the user specifically asked for "view users, their friends".
     // Since I can't change backend, I'll have to rely on what's there.
     return apiClient.get(`/users/${id}/friends`).catch(() => []) 
+  },
+
+  async assignRole(userId, roleId) {
+    return apiClient.post(`/users/${userId}/roles/${roleId}`)
+  },
+
+  async removeRole(userId, roleId) {
+    return apiClient.del(`/users/${userId}/roles/${roleId}`)
   },
 }
