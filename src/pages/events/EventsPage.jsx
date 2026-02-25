@@ -155,7 +155,7 @@ export default function EventsPage() {
       setBulkDeleteDialogOpen(false)
       setBulkDeleteIds([])
     } catch (error) {
-      toast.error(error.message || 'Failed to delete some events')
+      // Error handled by MutationCache in main.jsx
     } finally {
       setBulkDeleting(false)
     }

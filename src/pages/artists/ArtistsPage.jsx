@@ -119,7 +119,7 @@ export default function ArtistsPage() {
       setBulkDeleteDialogOpen(false)
       setBulkDeleteIds([])
     } catch (error) {
-      toast.error(error.message || 'Failed to delete some artists')
+      // toast.error(error.message || 'Failed to delete some artists') // Handled by MutationCache
     } finally {
       setBulkDeleting(false)
     }

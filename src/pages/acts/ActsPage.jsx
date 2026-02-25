@@ -166,8 +166,6 @@ export default function ActsPage() {
       toast.success(`${bulkDeleteIds.length} act(s) deleted`)
       setBulkDeleteDialogOpen(false)
       setBulkDeleteIds([])
-    } catch (error) {
-      toast.error(error.message || 'Failed to delete some acts')
     } finally {
       setBulkDeleting(false)
     }

@@ -118,11 +118,9 @@ export default function StagesPage() {
     try {
       await Promise.all(bulkDeleteIds.map((id) => deleteStage.mutateAsync(id)))
       toast.success(`${bulkDeleteIds.length} stage(s) deleted`)
+    } finally {
       setBulkDeleteDialogOpen(false)
       setBulkDeleteIds([])
-    } catch (error) {
-      toast.error(error.message || 'Failed to delete some stages')
-    } finally {
       setBulkDeleting(false)
     }
   }
