@@ -4,7 +4,6 @@ import { Search } from 'lucide-react'
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
-import { Toaster } from '@/components/ui/sonner'
 import { AppSidebar } from './AppSidebar'
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { CommandPalette } from '@/components/shared/CommandPalette'
@@ -51,7 +50,6 @@ export default function AppLayout() {
         </div>
       </SidebarInset>
       <CommandPalette open={searchOpen} onOpenChange={setSearchOpen} />
-      <Toaster />
     </SidebarProvider>
   )
 }

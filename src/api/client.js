@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'
+import { toast } from 'sonner'
 
 class ApiError extends Error {
   constructor(status, message, errors = {}) {
@@ -8,19 +8,35 @@ class ApiError extends Error {
   }
 }
 
-async function handleResponse(response) {
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'
+
+async function handleResponse(response, options = {}) {
   if (response.status === 204) {
     return null
   }
 
-  const data = await response.json()
+  const data = await response.json().catch(() => ({}))
 
   if (!response.ok) {
-    throw new ApiError(
+    if (response.status === 401) {
+      localStorage.removeItem('auth_token')
+      localStorage.removeItem('user')
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login'
+      }
+    }
+
+    const error = new ApiError(
       response.status,
       data.message || 'An error occurred',
       data.errors || {}
     )
+
+    if (!options.silent) {
+      toast.error(error.message)
+    }
+
+    throw error
   }
 
   return data
@@ -37,10 +53,10 @@ function buildHeaders(isFormData = false) {
   }
 
   // Future auth header
-  // const token = localStorage.getItem('auth_token')
-  // if (token) {
-  //   headers['Authorization'] = `Bearer ${token}`
-  // }
+  const token = localStorage.getItem('auth_token')
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
 
   return headers
 }
@@ -56,51 +72,51 @@ function buildUrl(path, params = {}) {
 }
 
 export const apiClient = {
-  async get(path, params = {}) {
+  async get(path, params = {}, options = {}) {
     const response = await fetch(buildUrl(path, params), {
       method: 'GET',
       headers: buildHeaders(),
     })
-    return handleResponse(response)
+    return handleResponse(response, options)
   },
 
-  async post(path, body) {
+  async post(path, body, options = {}) {
     const response = await fetch(buildUrl(path), {
       method: 'POST',
       headers: buildHeaders(),
       body: JSON.stringify(body),
     })
-    return handleResponse(response)
+    return handleResponse(response, options)
   },
 
-  async put(path, body) {
+  async put(path, body, options = {}) {
     const response = await fetch(buildUrl(path), {
       method: 'PUT',
       headers: buildHeaders(),
       body: JSON.stringify(body),
     })
-    return handleResponse(response)
+    return handleResponse(response, options)
   },
 
-  async del(path, body) {
-    const options = {
+  async del(path, body, options = {}) {
+    const fetchOptions = {
       method: 'DELETE',
       headers: buildHeaders(),
     }
     if (body) {
-      options.body = JSON.stringify(body)
+      fetchOptions.body = JSON.stringify(body)
     }
-    const response = await fetch(buildUrl(path), options)
-    return handleResponse(response)
+    const response = await fetch(buildUrl(path), fetchOptions)
+    return handleResponse(response, options)
   },
 
-  async upload(path, formData) {
+  async upload(path, formData, options = {}) {
     const response = await fetch(buildUrl(path), {
       method: 'POST',
       headers: buildHeaders(true),
       body: formData,
     })
-    return handleResponse(response)
+    return handleResponse(response, options)
   },
 }
 

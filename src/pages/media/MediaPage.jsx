@@ -60,7 +60,7 @@ export default function MediaPage() {
       await uploadMedia.mutateAsync({ file, type: mediaType })
       toast.success('Image uploaded')
     } catch (error) {
-      toast.error(error.message || 'Upload failed')
+      // Handled globally
     }
   }, [mediaType, uploadMedia])
 
@@ -94,7 +94,7 @@ export default function MediaPage() {
       setDeleteDialogOpen(false)
       setDeletingMedia(null)
     } catch (error) {
-      toast.error(error.message || 'Failed to delete media')
+      // Handled globally
     }
   }
 

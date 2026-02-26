@@ -91,7 +91,6 @@ export function DataTable({
     onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     manualPagination: true,
     manualFiltering: !!onFilterChange,
