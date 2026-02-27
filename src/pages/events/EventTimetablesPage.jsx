@@ -76,9 +76,11 @@ export default function EventTimetablesPage() {
           />
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" disabled>
-            <Download className="h-4 w-4 mr-2" /> Import Event
-          </Button>
+          {!officialExists && (
+            <Button variant="outline" disabled>
+              <Download className="h-4 w-4 mr-2" /> Import Timetable
+            </Button>
+          )}
           {!officialExists && (
             <Button onClick={handleCreateOfficial} disabled={createTimetable.isPending}>
               <Plus className="h-4 w-4 mr-2" /> Create Official Timetable
