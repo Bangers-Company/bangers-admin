@@ -1,6 +1,7 @@
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router'
 import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from '@tanstack/react-query'
-import { createRoot } from 'react-dom/client'
 import { toast } from 'sonner'
 import { ErrorBoundary } from './components/shared/ErrorBoundary'
 import { ThemeProvider } from './components/ThemeProvider'
@@ -9,6 +10,8 @@ import DashboardPage from './pages/dashboard/DashboardPage'
 import EventsPage from './pages/events/EventsPage'
 import EventLineupPage from './pages/events/EventLineupPage'
 import EventLineupEditPage from './pages/events/EventLineupEditPage'
+import EventTimetablesPage from './pages/events/EventTimetablesPage'
+import EventTimetableEditPage from './pages/events/EventTimetableEditPage'
 import ArtistsPage from './pages/artists/ArtistsPage'
 import ActsPage from './pages/acts/ActsPage'
 import StagesPage from './pages/stages/StagesPage'
@@ -20,6 +23,7 @@ import RolesPage from './pages/rbac/RolesPage'
 import ErrorPage from './pages/ErrorPage'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
 import { AuthProvider } from './context/AuthContext'
+import { Toaster } from '@/components/ui/sonner'
 import './index.css'
 
 const queryClient = new QueryClient({
@@ -66,6 +70,8 @@ const router = createBrowserRouter([
       { path: 'events', element: <EventsPage /> },
       { path: 'events/:id/lineup', element: <EventLineupPage /> },
       { path: 'events/:id/lineup/edit', element: <EventLineupEditPage /> },
+      { path: 'events/:id/timetables', element: <EventTimetablesPage /> },
+      { path: 'events/:eventId/timetables/:timetableId/edit', element: <EventTimetableEditPage /> },
       { path: 'artists', element: <ArtistsPage /> },
       { path: 'acts', element: <ActsPage /> },
       { path: 'stages', element: <StagesPage /> },
@@ -77,7 +83,7 @@ const router = createBrowserRouter([
   },
 ])
 
-import { Toaster } from '@/components/ui/sonner'
+
 
 createRoot(document.getElementById('root')).render(
   <ErrorBoundary>

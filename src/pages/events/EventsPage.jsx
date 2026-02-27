@@ -116,6 +116,11 @@ export default function EventsPage() {
                 Manage Stages
               </DropdownMenuItem>
               <DropdownMenuItem
+                onClick={() => navigate(`/events/${event.id}/timetables`)}
+              >
+                Manage Timetables
+              </DropdownMenuItem>
+              <DropdownMenuItem
                 onClick={() => navigate(`/events/${event.id}/lineup`)}
               >
                 Show Line-up

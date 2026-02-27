@@ -91,9 +91,11 @@ export default function EventLineupPage() {
             description={`${event.location} • ${new Date(event.start_date).toLocaleDateString()}`}
           />
         </div>
-        <Button onClick={() => navigate(`/events/${event.id}/lineup/edit`)}>
-          Edit Lineup
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => navigate(`/events/${event.id}/lineup/edit`)}>
+            Edit Lineup
+          </Button>
+        </div>
       </div>
 
       {days.length > 1 && (

@@ -62,7 +62,9 @@ function buildHeaders(isFormData = false) {
 }
 
 function buildUrl(path, params = {}) {
-  const url = new URL(`${BASE_URL}${path}`)
+  const needsAdmin = !path.startsWith('/auth') && !path.startsWith('/mobile') && !path.startsWith('/admin')
+  const prefix = needsAdmin ? '/admin' : ''
+  const url = new URL(`${BASE_URL}${prefix}${path}`)
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
       url.searchParams.append(key, value)
