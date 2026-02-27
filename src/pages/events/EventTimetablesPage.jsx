@@ -1,11 +1,11 @@
 import { useParams, useNavigate } from 'react-router'
 import { useEvent } from '@/hooks/useEvents'
-import { useTimetables, useDeleteTimetable, useCreateTimetable } from '@/hooks/useTimetables'
+import { useTimetables, useDeleteTimetable, useCreateTimetable, usePublishTimetable } from '@/hooks/useTimetables'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, ArrowLeft, Plus, Calendar, Trash2, Edit2, ExternalLink } from 'lucide-react'
+import { Loader2, ArrowLeft, Plus, Calendar, Trash2, Edit2, ExternalLink, Download } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function EventTimetablesPage() {
@@ -52,14 +52,16 @@ export default function EventTimetablesPage() {
 
   if (!event) return <div>Event not found</div>
 
-  // Sort timetables: Official first, then by name
-  const sortedTimetables = [...(timetables || [])].sort((a, b) => {
-    if (a.is_official && !b.is_official) return -1
-    if (!a.is_official && b.is_official) return 1
-    return a.name.localeCompare(b.name)
-  })
+  // Sort and Filter timetables: Only for this event, Official first, then by name
+  const filteredTimetables = (timetables || [])
+    .filter(t => String(t.event_id) === String(id))
+    .sort((a, b) => {
+      if (a.is_official && !b.is_official) return -1
+      if (!a.is_official && b.is_official) return 1
+      return a.name.localeCompare(b.name)
+    })
 
-  const officialExists = sortedTimetables.some(t => t.is_official)
+  const officialExists = filteredTimetables.some(t => t.is_official)
 
   return (
     <div className="space-y-6">
@@ -73,15 +75,20 @@ export default function EventTimetablesPage() {
             description="Manage official and public schedules for this event."
           />
         </div>
-        {!officialExists && (
-          <Button onClick={handleCreateOfficial} disabled={createTimetable.isPending}>
-            <Plus className="h-4 w-4 mr-2" /> Create Official Timetable
+        <div className="flex gap-2">
+          <Button variant="outline" disabled>
+            <Download className="h-4 w-4 mr-2" /> Import Event
           </Button>
-        )}
+          {!officialExists && (
+            <Button onClick={handleCreateOfficial} disabled={createTimetable.isPending}>
+              <Plus className="h-4 w-4 mr-2" /> Create Official Timetable
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {sortedTimetables.map((timetable) => (
+        {filteredTimetables.map((timetable) => (
           <Card key={timetable.id} className={timetable.is_official ? 'border-primary' : ''}>
             <CardHeader>
               <div className="flex justify-between items-start">
@@ -101,20 +108,23 @@ export default function EventTimetablesPage() {
                 </Badge>
               </div>
             </CardContent>
-            <CardFooter className="flex justify-between">
+            <CardFooter className="flex justify-between items-center gap-2">
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => navigate(`/events/${id}/timetables/${timetable.id}/edit`)}>
                   <Edit2 className="h-4 w-4 mr-2" /> Edit
                 </Button>
+                {timetable.is_official && (
+                  <PublishButton timetable={timetable} />
+                )}
               </div>
-              <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(timetable.id)}>
+              <Button variant="ghost" size="sm" className="text-destructive h-9 w-9 p-0" onClick={() => handleDelete(timetable.id)}>
                 <Trash2 className="h-4 w-4" />
               </Button>
             </CardFooter>
           </Card>
         ))}
 
-        {sortedTimetables.length === 0 && (
+        {filteredTimetables.length === 0 && (
           <div className="col-span-full py-12 text-center border-2 border-dashed rounded-lg bg-muted/20">
             <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <p className="text-muted-foreground">No timetables found for this event.</p>
@@ -122,5 +132,36 @@ export default function EventTimetablesPage() {
         )}
       </div>
     </div>
+  )
+}
+function PublishButton({ timetable }) {
+  const publishTimetable = usePublishTimetable()
+  
+  const handleToggle = async () => {
+    try {
+      await publishTimetable.mutateAsync({
+        id: timetable.id,
+        is_public: !timetable.is_public
+      })
+      toast.success(timetable.is_public ? 'Timetable unpublished' : 'Timetable published')
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  return (
+    <Button 
+      variant={timetable.is_public ? "secondary" : "default"} 
+      size="sm"
+      disabled={publishTimetable.isPending}
+      onClick={handleToggle}
+    >
+      {publishTimetable.isPending ? (
+        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+      ) : (
+        <ExternalLink className="h-4 w-4 mr-2" />
+      )}
+      {timetable.is_public ? 'Unpublish' : 'Publish'}
+    </Button>
   )
 }

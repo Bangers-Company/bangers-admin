@@ -41,8 +41,12 @@ export function DataTable({
   onBulkDelete,
   filterValue,
   onFilterChange,
+  sorting: externalSorting,
+  onSortingChange: externalOnSortingChange,
 }) {
-  const [sorting, setSorting] = useState([])
+  const [internalSorting, setInternalSorting] = useState([])
+  const sorting = externalSorting || internalSorting
+  const setSorting = externalOnSortingChange || setInternalSorting
   const [columnFilters, setColumnFilters] = useState([])
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState({})
@@ -94,6 +98,7 @@ export function DataTable({
     getFilteredRowModel: getFilteredRowModel(),
     manualPagination: true,
     manualFiltering: !!onFilterChange,
+    manualSorting: !!externalOnSortingChange,
     enableRowSelection,
   })
 

@@ -8,7 +8,8 @@ import {
   PointerSensor, 
   useSensor, 
   useSensors, 
-  defaultDropAnimationSideEffects 
+  defaultDropAnimationSideEffects,
+  useDndContext
 } from '@dnd-kit/core'
 import { 
   SortableContext, 
@@ -42,6 +43,7 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Loader2, ArrowLeft, Save, Plus } from 'lucide-react'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 
 // Random ID generator for items
 function generateId() {
@@ -128,16 +130,22 @@ function SortableActItem({ item }) {
 import { useDroppable } from '@dnd-kit/core'
 
 function DroppableColumn({ col, children }) {
+  const { active } = useDndContext()
   const data = useMemo(() => ({ type: 'Column', col }), [col])
-  const { setNodeRef } = useDroppable({
+  const { setNodeRef, isOver } = useDroppable({
     id: col.id,
     data
   })
 
+  const isActDragging = active?.data?.current?.type === 'Act'
+
   return (
     <div 
       ref={setNodeRef}
-      className="flex flex-col w-[300px] shrink-0 h-[600px] bg-muted/20 rounded-md border p-3 flex-1"
+      className={cn(
+        "flex flex-col w-[300px] shrink-0 h-[600px] rounded-md border p-3 flex-1 transition-all duration-200",
+        isOver && isActDragging ? "bg-primary/20 ring-4 ring-inset ring-primary/40 shadow-[inset_0_0_40px_rgba(var(--primary-rgb),0.1)] border-primary" : "bg-muted/20"
+      )}
     >
       <div className="mb-4 shrink-0">
         <h3 className="text-lg font-bold tracking-tight text-primary uppercase line-clamp-1">
@@ -150,6 +158,12 @@ function DroppableColumn({ col, children }) {
       
       <div className="flex-1 overflow-y-auto pr-1 pb-10">
         {children}
+        {isOver && isActDragging && (
+          <div className="h-16 border-2 border-dashed border-primary bg-primary/10 rounded-md animate-pulse mt-2 flex flex-col items-center justify-center gap-1">
+             <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+             <span className="text-[10px] font-black text-primary uppercase tracking-tighter">Drop at end</span>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -210,7 +224,6 @@ export default function EventLineupEditPage() {
   // Initialize columns and items
   useEffect(() => {
     if (!event || isInitialized) return
-    // ...
 
     const initialColumns = {}
     

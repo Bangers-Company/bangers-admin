@@ -40,7 +40,14 @@ export default function EventsPage() {
   const [bulkDeleting, setBulkDeleting] = useState(false)
 
   const [search, setSearch] = useState('')
-  const { data, isLoading } = useEvents(page + 1, { search })
+  const [sorting, setSorting] = useState([{ id: 'start_date', desc: true }])
+  
+  const sortParam = sorting[0] || {}
+  const { data, isLoading } = useEvents(page + 1, { 
+    search,
+    sort_by: sortParam.id,
+    sort_order: sortParam.desc ? 'desc' : 'asc'
+  })
   const deleteEvent = useDeleteEvent()
 
   useEffect(() => { document.title = 'Events — Bangers Admin' }, [])
@@ -55,17 +62,17 @@ export default function EventsPage() {
     },
     {
       accessorKey: 'location',
-      header: 'Location',
+      header: ({ column }) => <SortableHeader column={column}>Location</SortableHeader>,
       cell: ({ row }) => row.original.location || '—',
     },
     {
       accessorKey: 'start_date',
-      header: 'Start Date',
+      header: ({ column }) => <SortableHeader column={column}>Start Date</SortableHeader>,
       cell: ({ row }) => formatDate(row.original.start_date),
     },
     {
       accessorKey: 'end_date',
-      header: 'End Date',
+      header: ({ column }) => <SortableHeader column={column}>End Date</SortableHeader>,
       cell: ({ row }) => formatDate(row.original.end_date),
     },
     {
@@ -193,6 +200,8 @@ export default function EventsPage() {
         onFilterChange={setSearch}
         filterColumn="name"
         filterPlaceholder="Search events..."
+        sorting={sorting}
+        onSortingChange={setSorting}
         isLoading={isLoading}
         enableRowSelection
         enableColumnVisibility

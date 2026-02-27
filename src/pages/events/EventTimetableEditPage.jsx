@@ -4,11 +4,13 @@ import {
   DndContext, 
   DragOverlay, 
   closestCorners, 
+  pointerWithin,
   KeyboardSensor, 
   PointerSensor, 
   useSensor, 
   useSensors, 
-  useDroppable 
+  useDroppable,
+  useDndContext
 } from '@dnd-kit/core'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -34,13 +36,20 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, ArrowLeft, Save, Plus, GripVertical, Clock } from 'lucide-react'
+import { Loader2, ArrowLeft, Save, Plus, GripVertical, Clock, Calendar } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
 const ROW_HEIGHT = 240 // 1 hour = 240px -> 1 minute = 4px
 const SCALE = ROW_HEIGHT / 60
 const GRID_HEIGHT = 17 * ROW_HEIGHT // 9 AM to 2 AM = 17 hours
+
+const formatTimeMinutes = (minutes) => {
+  const totalMinutes = (9 * 60) + minutes
+  const hours = Math.floor(totalMinutes / 60) % 24
+  const mins = totalMinutes % 60
+  return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`
+}
 
 function generateId() {
   return Math.random().toString(36).substr(2, 9)
@@ -185,7 +194,7 @@ function TimetableActItem({ item, onResize, onRemove }) {
   )
 }
 
-function PoolActItem({ item }) {
+function PoolActItem({ item, stages }) {
   const {
     attributes,
     listeners,
@@ -205,16 +214,26 @@ function PoolActItem({ item }) {
     cursor: 'grab',
   }
 
+  // Find suggested stage from lineup
+  const suggestedStage = stages?.find(s => s.id === item.stageId)
+
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="mb-2">
-      <Card className="p-2 border-l-4 border-l-muted hover:bg-muted/30 transition-colors">
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="shrink-0">
+      <Card className="p-2.5 border-l-4 border-l-muted hover:bg-muted/30 transition-colors w-48 shadow-sm">
         <div className="flex items-center gap-2">
-          <GripVertical className="h-3 w-3 text-muted-foreground" />
-          <div className="flex flex-col min-w-0">
+          <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
+          <div className="flex flex-col min-w-0 flex-1 py-0.5">
              <span className="text-[13px] font-bold truncate leading-tight text-foreground">{item.name}</span>
-             <span className="text-[11px] text-muted-foreground truncate italic">
-               {item.artists?.map(a => a.name).join(', ')}
-             </span>
+             {suggestedStage && (
+               <Badge variant="outline" className="mt-1 h-4 text-[9px] px-1 py-0 w-fit border-primary/20 bg-primary/5 text-primary font-bold">
+                 Lineup: {suggestedStage.name}
+               </Badge>
+             )}
+             {!suggestedStage && (
+                <span className="text-[10px] text-muted-foreground truncate italic">
+                  Not in lineup
+                </span>
+             )}
           </div>
         </div>
       </Card>
@@ -222,34 +241,85 @@ function PoolActItem({ item }) {
   )
 }
 
-function DroppableStageColumn({ stage, date, items, onResize, onRemove }) {
+function DroppableStageColumn({ stage, date, items, onResize, onRemove, scrollRef, pool }) {
+  const { active, over } = useDndContext()
   const { setNodeRef, isOver } = useDroppable({
     id: `${stage.id}_${date}`,
     data: { type: 'Stage', stage, date }
   })
 
+  // Filter pool acts for THIS stage and THIS date
+  const stagePool = pool.filter(p => p.stageId === stage.id && p.date === date)
+  const currentPoolAct = stagePool[0] // Only show the first one (carousel)
+
+  // Determine if WE are the target (directly or via a child Act)
+  const isDirectlyOver = isOver
+  const isOverChild = over?.data?.current?.type === 'Act' && 
+                    (over.data.current.item?.stageId === stage.id || over.data.current.item?.stage_id === stage.id) && 
+                    over.data.current.item?.date === date
+
+  const showVisualOver = (isDirectlyOver || isOverChild) && active?.data?.current?.type === 'Act'
+
   return (
     <div className="flex flex-col w-[240px] shrink-0 border-r last:border-r-0 bg-muted/5">
+      {/* Pool Area - Outside time slots */}
+      <div className="px-2 py-2 border-b bg-primary/5 h-[95px] flex flex-col justify-center shrink-0">
+        {currentPoolAct ? (
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-[9px] font-black text-primary/60 uppercase tracking-tighter">Lineup Acts</span>
+              <Badge variant="outline" className="h-4 text-[9px] px-1 font-black bg-background border-primary/20 text-primary">
+                {stagePool.length} to assign
+              </Badge>
+            </div>
+            <div className="relative group">
+              {stagePool.length > 1 && (
+                <>
+                  <div className="absolute -right-1 -bottom-1 w-full h-full bg-muted border rounded-md -z-10 opacity-50" />
+                  <div className="absolute -right-2 -bottom-2 w-full h-full bg-muted border rounded-md -z-20 opacity-30" />
+                </>
+              )}
+              <PoolActItem item={currentPoolAct} />
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-2 border-2 border-dashed rounded-md bg-background/20 opacity-40 h-[60px]">
+            <Clock className="h-3 w-3 mb-0.5 text-muted-foreground" />
+            <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest text-center px-1 leading-tight">
+              All assigned
+            </span>
+          </div>
+        )}
+      </div>
+
       <div className="h-14 flex flex-col justify-center px-4 border-b sticky top-0 bg-background z-20">
         <h3 className="text-xs font-bold uppercase tracking-wider truncate text-primary">{stage.name}</h3>
       </div>
       
       <div 
         ref={setNodeRef}
+        data-grid-id={`${stage.id}_${date}`}
         className={cn(
-          "relative flex-1",
-          isOver && "bg-primary/5"
+          "relative flex-1 transition-all duration-300",
+          showVisualOver && "bg-primary/5 ring-4 ring-inset ring-primary/20"
         )}
         style={{ height: `${GRID_HEIGHT}px` }}
       >
         {/* Hour guide lines */}
-        {Array.from({ length: 18 }).map((_, i) => (
+        {Array.from({ length: 18 * 4 }).map((_, i) => (
           <div 
             key={i} 
-            className="absolute left-0 right-0 border-b border-muted/50 z-0" 
-            style={{ top: `${i * ROW_HEIGHT}px`, height: '1px' }}
+            className={cn(
+              "absolute left-0 right-0 z-0",
+              i % 4 === 0 ? "border-b border-muted/60" : "border-b border-dashed border-muted/20"
+            )} 
+            style={{ top: `${i * (ROW_HEIGHT / 4)}px`, height: '1px' }}
           />
         ))}
+
+        {showVisualOver && (
+           <DropPreview active={active} over={over} items={items} />
+        )}
 
         {items.map(item => (
           <TimetableActItem 
@@ -259,6 +329,83 @@ function DroppableStageColumn({ stage, date, items, onResize, onRemove }) {
             onRemove={onRemove}
           />
         ))}
+      </div>
+    </div>
+  )
+}
+
+const getSnappedTime = (minutes, items, activeDragId, duration) => {
+  const SNAP_THRESHOLD = 15 // minutes
+
+  // 1. Grid snapping (15 min)
+  let snapped = Math.round(minutes / 15) * 15
+
+  // 2. Neighbor snapping (magnetic)
+  const myEnd = snapped + duration
+  
+  let bestSnap = snapped
+  let minDelta = SNAP_THRESHOLD
+
+  items.forEach(item => {
+    if (item.dragId === activeDragId) return
+    
+    // Snap our START to their END
+    const theirEnd = item.top + item.duration
+    const deltaStart = Math.abs(minutes - theirEnd)
+    if (deltaStart < minDelta) {
+      minDelta = deltaStart
+      bestSnap = theirEnd
+    }
+
+    // Snap our END to their START
+    const deltaEnd = Math.abs((minutes + duration) - item.top)
+    if (deltaEnd < minDelta) {
+      minDelta = deltaEnd
+      bestSnap = item.top - duration
+    }
+  })
+
+  return Math.max(0, Math.min(bestSnap, 1020 - duration))
+}
+
+function DropPreview({ active, over, items }) {
+  const activeItem = active?.data?.current?.item
+  const activeRect = active?.rect?.current?.translated || active?.rect?.current?.initial
+  
+  // Find the column rect even if 'over' is an Act
+  const overData = over?.data?.current
+  const targetStageId = overData?.stage?.id || overData?.item?.stageId
+  const targetDate = overData?.date || overData?.item?.date
+
+  // We need the Rect of the droppable area (the Stage column grid)
+  // Since we can be over a child, we find the column by ID
+  const gridArea = document.querySelector(`[data-grid-id="${targetStageId}_${targetDate}"]`)
+  const overRect = gridArea?.getBoundingClientRect()
+  
+  if (!activeItem || !activeRect || !overRect) return null
+
+  // Calculate the local Y coordinate within the droppable area
+  const topPx = activeRect.top - overRect.top
+  const duration = activeItem.duration || 60
+  
+  let minutes = topPx / SCALE
+  
+  // Use magnetic snapping
+  const snappedMinutes = getSnappedTime(minutes, items, active.id, duration)
+
+  return (
+    <div 
+      className="absolute left-0 right-0 border-[4px] border-primary border-dashed rounded-lg z-[300] pointer-events-none animate-pulse bg-primary/20"
+      style={{
+        top: `${snappedMinutes * SCALE}px`,
+        height: `${duration * SCALE}px`,
+        boxShadow: '0 0 50px rgba(var(--primary-rgb), 0.4)'
+      }}
+    >
+      <div className="absolute inset-x-0 -top-8 flex justify-center">
+        <div className="bg-primary text-primary-foreground px-3 py-1 rounded-md text-[11px] font-black shadow-2xl ring-2 ring-white/50 whitespace-nowrap">
+          {formatTimeMinutes(snappedMinutes)} - {formatTimeMinutes(snappedMinutes + duration)}
+        </div>
       </div>
     </div>
   )
@@ -288,6 +435,7 @@ export default function EventTimetableEditPage() {
   const [selectedDay, setSelectedDay] = useState('')
   const [addActModalOpen, setAddActModalOpen] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
+  const [dragActive, setDragActive] = useState(null)
   const scrollRef = useRef(null)
 
   const days = useMemo(() => {
@@ -337,8 +485,20 @@ export default function EventTimetableEditPage() {
         actId: entry.act_id
       }
     })
+    
+    // Pre-fill pool with remaining acts from event lineup
+    const assignedActIds = new Set(initialEntries.map(e => e.id))
+    const initialPool = (event.acts || [])
+      .filter(act => !assignedActIds.has(act.id))
+      .map(act => ({
+        ...act,
+        dragId: generateId(),
+        stageId: act.stage_id || act.pivot?.stage_id,
+        date: act.date || act.pivot?.date
+      }))
 
     setEntries(initialEntries)
+    setPool(initialPool)
     setIsInitialized(true)
   }, [event, timetable, isInitialized])
 
@@ -351,55 +511,69 @@ export default function EventTimetableEditPage() {
     const { active } = e
     const item = [...pool, ...entries].find(i => i.dragId === active.id)
     setActiveItem(item)
+    setDragActive(active)
   }
 
   const handleDragOver = (e) => {
-    // We handle movement between columns and pool here if needed
+    setDragActive(e.active)
   }
 
   const handleDragEnd = (e) => {
-    const { active, over, delta } = e
+    const { active, over } = e
     setActiveItem(null)
+    setDragActive(null)
     
     if (!over) return
 
     const draggedItem = [...pool, ...entries].find(i => i.dragId === active.id)
     if (!draggedItem) return
 
-    // If dropped on a stage
-    if (over.data.current?.type === 'Stage') {
-      const { stage, date } = over.data.current
-      
+    // If dropped on a stage OR an act in a stage
+    const overData = over.data.current
+    let targetStageId = null
+    let targetDate = null
+
+    if (overData?.type === 'Stage') {
+      targetStageId = overData.stage.id
+      targetDate = overData.date
+    } else if (overData?.type === 'Act') {
+      targetStageId = overData.item.stageId
+      targetDate = overData.item.date
+    }
+
+    if (targetStageId && targetDate) {
       // Calculate top relative to the droppable stage area, accounting for scroll
       const activeRect = active.rect.current.translated
-      const overRect = over.rect
+      const gridArea = document.querySelector(`[data-grid-id="${targetStageId}_${targetDate}"]`)
+      const overRect = gridArea?.getBoundingClientRect()
       
-      if (!activeRect || !overRect || !scrollRef.current) return
+      if (!activeRect || !overRect) return
 
-      let newTop = ((activeRect.top - overRect.top) + scrollRef.current.scrollTop) / SCALE
+      let newTop = (activeRect.top - overRect.top) / SCALE
  
-      // Snap to 1 minute intervals
-      newTop = Math.round(newTop)
-      newTop = Math.max(0, Math.min(newTop, 1020 - (draggedItem.duration || 60)))
+      // Use magnetic snapping
+      const duration = draggedItem.duration || 60
+      const dayEntries = entries.filter(e => e.date === targetDate && e.stageId === targetStageId)
+      newTop = getSnappedTime(newTop, dayEntries, active.id, duration)
 
       const updatedItem = {
         ...draggedItem,
         top: newTop,
-        duration: draggedItem.duration || 60,
-        stageId: stage.id,
-        date: date
+        duration: duration,
+        stageId: targetStageId,
+        date: targetDate
       }
 
-      // Overlap check - with 1-min tolerance
+      // Overlap check - with tiny tolerance
       const hasOverlap = entries.some(other => {
         if (other.dragId === draggedItem.dragId) return false
-        if (other.stageId !== stage.id || other.date !== date) return false
+        if (other.stageId !== targetStageId || other.date !== targetDate) return false
         
         const otherEnd = other.top + other.duration
         const newEnd = updatedItem.top + updatedItem.duration
         
-        // Use a tiny 1-minute tolerance to prevent "shooting back" on tight placements
-        return (updatedItem.top < otherEnd - 1) && (newEnd > other.top + 1)
+        // Use 0.1 tolerance to allow perfect alignment
+        return (updatedItem.top < otherEnd - 0.1) && (newEnd > other.top + 0.1)
       })
 
       if (hasOverlap) {
@@ -413,7 +587,7 @@ export default function EventTimetableEditPage() {
       })
       setPool(prev => prev.filter(i => i.dragId !== active.id))
     } 
-    // If dropped back to pool (implicitly if not on stage, or if we define a pool droppable)
+    // If dropped back to pool
     else if (over.id === 'pool') {
       setPool(prev => [...prev.filter(i => i.dragId !== active.id), { ...draggedItem, top: undefined, stageId: undefined, date: undefined }])
       setEntries(prev => prev.filter(i => i.dragId !== active.id))
@@ -422,27 +596,40 @@ export default function EventTimetableEditPage() {
 
    const handleResize = (dragId, newHeight) => {
     // Round to 1 minute. newHeight is in pixels, convert to minutes.
-    const newDuration = Math.round(newHeight / SCALE)
-    const snappedDuration = Math.max(15, newDuration) // 15 min minimum
+    let newDuration = Math.round(newHeight / SCALE)
+    newDuration = Math.max(15, newDuration) // 15 min minimum
     
     // Check for overlap while resizing
     const act = entries.find(i => i.dragId === dragId)
     if (!act) return
+
+    // Magnetic snapping for RESIZE (snap end of current act to start of next act)
+    const dayEntries = entries.filter(e => e.date === act.date && e.stageId === act.stageId && e.dragId !== dragId)
+    const nextAct = dayEntries
+      .filter(e => e.top >= act.top + act.duration - 30) // Look ahead
+      .sort((a, b) => a.top - b.top)[0]
+
+    if (nextAct) {
+      const snapDist = Math.abs((act.top + newDuration) - nextAct.top)
+      if (snapDist < 15) {
+        newDuration = nextAct.top - act.top
+      }
+    }
 
     const hasOverlap = entries.some(other => {
       if (other.dragId === dragId) return false
       if (other.stageId !== act.stageId || other.date !== act.date) return false
       
       const otherEnd = other.top + other.duration
-      const newEnd = act.top + snappedDuration
+      const newEnd = act.top + newDuration
       
-      return act.top < otherEnd && newEnd > other.top
+      return (act.top < otherEnd - 0.1) && (newEnd > other.top + 0.1)
     })
 
     if (hasOverlap) return // Silently block resizing into other acts
 
     setEntries(prev => prev.map(item => 
-      item.dragId === dragId ? { ...item, duration: snappedDuration } : item
+      item.dragId === dragId ? { ...item, duration: newDuration } : item
     ))
   }
 
@@ -536,90 +723,107 @@ export default function EventTimetableEditPage() {
         </div>
       )}
 
-      <DndContext 
-        sensors={sensors}
-        collisionDetection={closestCorners}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="flex-1 flex overflow-hidden border rounded-lg bg-card shadow-lg">
-          {/* Layout: Fixed Time scale + Scrolling stages */}
-          <div className="flex-1 flex overflow-hidden">
-            <div ref={scrollRef} className="flex-1 flex overflow-y-auto overflow-x-auto relative">
-                
-                {/* Fixed Time Scale Column - Sticky Left */}
-                <div className="w-24 shrink-0 border-r bg-muted/30 flex flex-col sticky left-0 z-40">
-                  <div className="h-14 shrink-0 bg-background/95 backdrop-blur-sm border-b flex items-center justify-center font-black text-[10px] uppercase tracking-tighter text-muted-foreground">TIME</div>
-                  <div className="relative" style={{ height: `${GRID_HEIGHT}px` }}>
-                    {Array.from({ length: 18 }).map((_, i) => (
-                      <div key={i} className="absolute left-0 right-0 border-b border-muted/20" style={{ top: `${i * ROW_HEIGHT}px`, height: `${ROW_HEIGHT}px` }}>
-                        {/* Main Hour Label */}
-                        <div className="absolute top-0 left-0 right-0 flex justify-center -translate-y-1/2">
-                          <div className="px-2 py-1 bg-primary text-primary-foreground font-black text-xs rounded-md shadow-sm border-2 border-background">
-                            {formatTime(i * 60)}
-                          </div>
-                        </div>
-                        
-                        {/* Half-hour marker */}
-                        {i < 17 && (
-                          <div className="absolute top-1/2 left-0 right-0 flex items-center justify-center -translate-y-1/2 opacity-30">
-                            <span className="text-[10px] font-black">{formatTime(i * 60 + 30)}</span>
-                          </div>
-                        )}
+      {event.stages?.length === 0 ? (
+        <div className="flex-1 flex flex-col items-center justify-center bg-muted/10 border-2 border-dashed rounded-lg py-24">
+           <PageHeader title="No Stages Found" description="You must add stages to the event lineup before you can create a timetable." />
+           <Button variant="default" className="mt-6" onClick={() => navigate(`/events/${eventId}/lineup`)}>
+             Go to Lineup Manager
+           </Button>
+        </div>
+      ) : (
+        <>
+          <DndContext 
+            sensors={sensors}
+            collisionDetection={closestCorners}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDragEnd={handleDragEnd}
+          >
+            {/* Top Area - Empty since pool is moving to stages */}
+            <div className="flex-1 flex overflow-hidden border rounded-lg bg-card shadow-lg">
+              {/* Layout: Fixed Time scale + Scrolling stages */}
+              <div className="flex-1 flex overflow-hidden">
+                <div ref={scrollRef} className="flex-1 flex overflow-y-auto overflow-x-auto relative">
+                    
+                    {/* Fixed Time Scale Column - Sticky Left */}
+                    <div className="w-24 shrink-0 border-r bg-muted/30 flex flex-col sticky left-0 z-40">
+                      <div className="h-[95px] shrink-0 border-b bg-background/50 flex flex-col items-center justify-center">
+                        <Calendar className="h-4 w-4 text-muted-foreground/30" />
                       </div>
-                    ))}
+                      <div className="h-14 shrink-0 bg-background/95 backdrop-blur-sm border-b flex flex-col justify-center px-4 font-black text-[10px] uppercase tracking-tighter text-muted-foreground sticky top-0 z-20">TIME</div>
+                      <div className="relative" style={{ height: `${GRID_HEIGHT}px` }}>
+                        {Array.from({ length: 18 }).map((_, i) => (
+                          <div key={i} className="absolute left-0 right-0 border-b border-muted/20" style={{ top: `${i * ROW_HEIGHT}px`, height: `${ROW_HEIGHT}px` }}>
+                            {/* Main Hour Label */}
+                            <div className="absolute top-0 -translate-y-1/2 left-2 bg-background/80 backdrop-blur-sm px-1.5 py-0.5 rounded border shadow-sm font-black text-[11px] z-20">
+                              {formatTimeMinutes(i * 60)}
+                            </div>
+                            
+                            {/* Half-hour marker */}
+                            {i < 17 && (
+                              <div className="absolute top-1/2 left-0 right-0 flex items-center justify-center -translate-y-1/2 opacity-30">
+                                <span className="text-[10px] font-black">{formatTimeMinutes(i * 60 + 30)}</span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Stages grid area */}
+                    <div className="flex items-start">
+                      {event.stages?.map(stage => (
+                        <DroppableStageColumn 
+                          key={stage.id} 
+                          stage={stage} 
+                          date={selectedDay} 
+                          items={visibleEntries.filter(e => e.stageId === stage.id)}
+                          onResize={handleResize}
+                          onRemove={handleRemove}
+                          scrollRef={scrollRef}
+                          pool={pool}
+                        />
+                      ))}
+
+                      {/* Floating Pool Column (for acts with no stage assigned in lineup) */}
+                      <div className="flex flex-col w-[200px] shrink-0 border-r last:border-r-0 bg-muted/10 opacity-70">
+                         <div className="h-[95px] shrink-0 border-b bg-background/50 flex flex-col items-center justify-center">
+                            <span className="text-[8px] font-black uppercase tracking-tighter text-muted-foreground/40 text-center px-2">Unmapped<br/>Lineup</span>
+                         </div>
+                         <div className="h-14 flex flex-col justify-center px-4 border-b sticky top-0 bg-background z-20">
+                            <h3 className="text-[10px] font-black uppercase tracking-wider truncate text-muted-foreground">General Pool</h3>
+                         </div>
+                         <div className="p-2 space-y-2">
+                           <DroppablePool id="pool">
+                              {pool.filter(p => !p.stageId && p.date === selectedDay).map(item => (
+                                <PoolActItem key={item.dragId} item={item} />
+                              ))}
+                              {pool.filter(p => !p.stageId && p.date === selectedDay).length === 0 && (
+                                <div className="text-[10px] text-muted-foreground italic text-center py-12 px-4 border-2 border-dashed rounded-lg bg-background/30">
+                                   No general acts for this day
+                                </div>
+                              )}
+                           </DroppablePool>
+                         </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-
-                {/* Stages grid area */}
-                <div className="flex items-start">
-                  {event.stages?.map(stage => (
-                    <DroppableStageColumn 
-                      key={stage.id} 
-                      stage={stage} 
-                      date={selectedDay} 
-                      items={visibleEntries.filter(e => e.stageId === stage.id)}
-                      onResize={handleResize}
-                      onRemove={handleRemove}
-                    />
-                  ))}
-                </div>
-              </div>
             </div>
 
-          {/* Pool Sidebar */}
-          <div className="w-72 border-l bg-background flex flex-col shrink-0">
-             <div className="p-4 border-b flex items-center justify-between bg-primary/5">
-               <h4 className="text-[11px] font-black uppercase tracking-widest text-primary">Unassigned Acts</h4>
-               <Badge variant="secondary" className="font-black">{pool.length}</Badge>
-             </div>
-             
-             <div className="flex-1 overflow-y-auto p-4 space-y-3">
-               <DroppablePool id="pool">
-                  {pool.map(item => (
-                    <PoolActItem key={item.dragId} item={item} />
-                  ))}
-                  {pool.length === 0 && (
-                    <div className="text-xs text-muted-foreground italic text-center py-12 px-4 border-2 border-dashed rounded-lg bg-muted/10">
-                      Drag acts here to remove them from the timetable
-                    </div>
-                  )}
-               </DroppablePool>
-             </div>
-          </div>
-        </div>
-
-        <DragOverlay>
-          {activeItem ? (
-            <Card className="p-3 border-l-8 border-l-primary shadow-2xl bg-background/95 backdrop-blur-sm scale-105 opacity-90 cursor-grabbing ring-4 ring-primary/20">
-              <div className="flex flex-col gap-1">
-                <span className="text-[14px] font-black leading-tight">{activeItem.name}</span>
-                <span className="text-[11px] font-bold text-primary">{activeItem.duration || 60} minutes</span>
-              </div>
-            </Card>
-          ) : null}
-        </DragOverlay>
-      </DndContext>
+            <DragOverlay>
+              {activeItem ? (
+                <Card className="p-3 border-l-8 border-l-primary shadow-2xl bg-background/95 backdrop-blur-sm scale-105 opacity-90 cursor-grabbing ring-4 ring-primary/20">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[14px] font-black leading-tight">{activeItem.name}</span>
+                    <span className="text-[11px] font-bold text-primary">{activeItem.duration || 60} minutes</span>
+                  </div>
+                </Card>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
+        </>
+      )}
 
       <AddActModal open={addActModalOpen} onOpenChange={setAddActModalOpen} onAdd={handleAddActToPool} />
     </div>
@@ -629,7 +833,7 @@ export default function EventTimetableEditPage() {
 function DroppablePool({ id, children }) {
   const { setNodeRef, isOver } = useDroppable({ id })
   return (
-    <div ref={setNodeRef} className={cn("min-h-[200px] h-full transition-colors rounded-md", isOver && "bg-primary/5")}>
+    <div ref={setNodeRef} className={cn("min-w-full transition-colors rounded-md", isOver && "bg-primary/10 border-primary/20")}>
       {children}
     </div>
   )
