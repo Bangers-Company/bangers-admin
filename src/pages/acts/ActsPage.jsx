@@ -48,6 +48,16 @@ export default function ActsPage() {
     {
       accessorKey: 'name',
       header: ({ column }) => <SortableHeader column={column}>Name</SortableHeader>,
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <span>{row.original.name}</span>
+          {row.original.is_live && (
+            <Badge variant="destructive" className="h-5 px-1.5 text-[10px] uppercase font-bold tracking-wider leading-none">
+              Live
+            </Badge>
+          )}
+        </div>
+      ),
     },
     {
       accessorKey: 'description',
