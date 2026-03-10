@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -40,6 +40,7 @@ export function EventForm({ open, onOpenChange, event }) {
   const isEditing = !!event
   const createEvent = useCreateEvent()
   const updateEvent = useUpdateEvent()
+  const [isMediaUploading, setIsMediaUploading] = useState(false)
 
   const form = useForm({
     resolver: zodResolver(eventSchema),
@@ -76,6 +77,10 @@ export function EventForm({ open, onOpenChange, event }) {
   }, [event, form])
 
   async function onSubmit(values) {
+    if (isMediaUploading) {
+      toast.error('Please wait for the media upload to finish')
+      return
+    }
     const data = {
       name: values.name,
       start_date: values.start_date,
@@ -202,6 +207,7 @@ export function EventForm({ open, onOpenChange, event }) {
                     <MediaPicker
                       value={field.value}
                       onChange={field.onChange}
+                      onUploadingChange={setIsMediaUploading}
                       mediaType="event_banner"
                       label="Banner"
                       existingUrl={event?.banner?.url}
@@ -219,8 +225,8 @@ export function EventForm({ open, onOpenChange, event }) {
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isPending}>
-                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button type="submit" disabled={isPending || isMediaUploading}>
+                {(isPending || isMediaUploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isEditing ? 'Update' : 'Create'}
               </Button>
             </div>
