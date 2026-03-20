@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router'
-import { User, Calendar, Users, ArrowLeft, Mail, MapPin } from 'lucide-react'
+import { User, Calendar, Users, ArrowLeft, Mail, MapPin, Clock, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -208,6 +208,10 @@ export default function UserDetailPage() {
                   <Users className="mr-2 h-4 w-4" />
                   Friends ({friends.length})
                 </TabsTrigger>
+                <TabsTrigger value="timetables" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent">
+                  <Clock className="mr-2 h-4 w-4" />
+                  Timetables ({events.length})
+                </TabsTrigger>
               </TabsList>
             </CardHeader>
             <TabsContent value="events" className="p-0 m-0">
@@ -215,7 +219,7 @@ export default function UserDetailPage() {
                 {events.length > 0 ? (
                   <div className="space-y-4">
                     {events.map(event => (
-                      <div key={event.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div key={event.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
                         <div>
                           <p className="font-semibold">{event.name}</p>
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -223,9 +227,14 @@ export default function UserDetailPage() {
                             {event.location}
                           </div>
                         </div>
-                        <Badge variant={event.pivot?.status === 'going' ? 'default' : 'secondary'}>
-                          {event.pivot?.status || 'attending'}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                           <Badge variant={event.pivot?.status === 'going' ? 'default' : 'secondary'}>
+                             {event.pivot?.status || 'attending'}
+                           </Badge>
+                           <Button variant="ghost" size="icon-sm" onClick={() => navigate(`/events/${event.id}/timetables`)}>
+                              <ExternalLink className="h-3.5 w-3.5" />
+                           </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -254,6 +263,40 @@ export default function UserDetailPage() {
                   <div className="text-center py-8 text-muted-foreground">No friends found.</div>
                 )}
               </CardContent>
+            </TabsContent>
+            <TabsContent value="timetables" className="p-0 m-0">
+               <CardContent className="pt-6 space-y-6">
+                  <div className="bg-primary/5 border border-primary/20 p-4 rounded-lg flex items-start gap-3">
+                     <Clock className="h-5 w-5 text-primary mt-0.5" />
+                     <div className="space-y-1">
+                        <p className="text-sm font-bold">Personal Timetables</p>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          Below you can see the events this user is attending. You can view their personal custom-built timetable for each event.
+                        </p>
+                     </div>
+                  </div>
+                  
+                  {events.length > 0 ? (
+                    <div className="space-y-3">
+                      {events.map(event => (
+                        <div key={event.id} className="p-4 border rounded-lg flex items-center justify-between">
+                           <div className="flex flex-col">
+                              <span className="font-bold text-sm tracking-tight">{event.name}</span>
+                              <span className="text-[10px] uppercase font-bold text-muted-foreground">
+                                {new Date(event.start_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </span>
+                           </div>
+                           <Button size="sm" variant="outline" className="h-8 gap-2" onClick={() => toast.info(`Viewing personal timetable for ${event.name} is coming soon in a future backend update.`)}>
+                              <Calendar className="h-4 w-4" />
+                              View Timetable
+                           </Button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">No active timetables for this user.</div>
+                  )}
+               </CardContent>
             </TabsContent>
           </Tabs>
         </Card>

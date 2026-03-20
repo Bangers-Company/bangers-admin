@@ -4,8 +4,9 @@ import { Upload, X, Loader2, ImageIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useUploadMedia } from '@/hooks/useMedia'
 
-export function MediaPicker({ value, onChange, mediaType, label = 'Image', existingUrl }) {
+export function MediaPicker({ value, onChange, onUploadingChange, mediaType, label = 'Image', existingUrl }) {
   const [previewUrl, setPreviewUrl] = useState(null)
+  const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef(null)
   const uploadMedia = useUploadMedia()
 
@@ -26,19 +27,31 @@ export function MediaPicker({ value, onChange, mediaType, label = 'Image', exist
     // Show local preview immediately
     const localUrl = URL.createObjectURL(file)
     setPreviewUrl(localUrl)
+    setIsUploading(true)
+    onUploadingChange?.(true)
 
     try {
       const result = await uploadMedia.mutateAsync({ file, type: mediaType })
-      onChange(result.id)
-      // Use the uploaded URL instead of the blob URL
-      if (result.url) {
-        setPreviewUrl(result.url)
+      // Support both { data: { id } } (Laravel default) and { id } formats
+      const mediaId = result?.data?.id || result?.id
+      const mediaUrl = result?.data?.url || result?.url
+
+      if (!mediaId) {
+        throw new Error('Upload successful but no ID received')
+      }
+
+      onChange(mediaId)
+      if (mediaUrl) {
+        setPreviewUrl(mediaUrl)
       }
       toast.success(`${label} uploaded`)
     } catch (error) {
       setPreviewUrl(null)
       onChange('')
       toast.error(error.message || 'Upload failed')
+    } finally {
+      setIsUploading(false)
+      onUploadingChange?.(false)
     }
   }
 
@@ -48,8 +61,8 @@ export function MediaPicker({ value, onChange, mediaType, label = 'Image', exist
   }
 
   // Determine what to show: local preview, existing URL from props, or just the value (UUID)
-  const displayUrl = previewUrl || existingUrl
-  const showPreview = displayUrl || value
+  const showPreview = !!(previewUrl || value)
+  const displayUrl = previewUrl || (value ? existingUrl : null)
 
   return (
     <div className="space-y-2">
@@ -57,14 +70,25 @@ export function MediaPicker({ value, onChange, mediaType, label = 'Image', exist
         <div className="relative inline-block">
           <div className="relative h-32 w-48 rounded-lg border overflow-hidden bg-muted">
             {displayUrl ? (
-              <img
-                src={displayUrl}
-                alt=""
-                className="h-full w-full object-cover"
-              />
+              <>
+                <img
+                  src={displayUrl}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+                {isUploading && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
+                    <Loader2 className="h-8 w-8 animate-spin text-white" />
+                  </div>
+                )}
+              </>
             ) : (
               <div className="flex items-center justify-center h-full">
-                <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                {isUploading ? (
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                ) : (
+                  <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                )}
               </div>
             )}
           </div>
@@ -84,14 +108,14 @@ export function MediaPicker({ value, onChange, mediaType, label = 'Image', exist
           variant="outline"
           className="w-full"
           onClick={() => fileInputRef.current?.click()}
-          disabled={uploadMedia.isPending}
+          disabled={isUploading}
         >
-          {uploadMedia.isPending ? (
+          {isUploading ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
             <Upload className="mr-2 h-4 w-4" />
           )}
-          {uploadMedia.isPending ? 'Uploading...' : `Upload ${label}`}
+          {isUploading ? 'Uploading...' : `Upload ${label}`}
         </Button>
       )}
       <input

@@ -20,12 +20,14 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { useCreateAct, useUpdateAct } from '@/hooks/useActs'
 
 const actSchema = z.object({
   name: z.string().min(1, 'Name is required').max(255),
   description: z.string().optional().default(''),
+  is_live: z.boolean().default(false),
 })
 
 export function ActForm({ open, onOpenChange, act }) {
@@ -35,7 +37,7 @@ export function ActForm({ open, onOpenChange, act }) {
 
   const form = useForm({
     resolver: zodResolver(actSchema),
-    defaultValues: { name: '', description: '' },
+    defaultValues: { name: '', description: '', is_live: false },
   })
 
   useEffect(() => {
@@ -43,9 +45,10 @@ export function ActForm({ open, onOpenChange, act }) {
       form.reset({
         name: act.name || '',
         description: act.description || '',
+        is_live: act.is_live ?? false,
       })
     } else {
-      form.reset({ name: '', description: '' })
+      form.reset({ name: '', description: '', is_live: false })
     }
   }, [act, form])
 
@@ -53,6 +56,7 @@ export function ActForm({ open, onOpenChange, act }) {
     const data = {
       name: values.name,
       description: values.description || null,
+      is_live: values.is_live,
     }
 
     try {
@@ -118,6 +122,28 @@ export function ActForm({ open, onOpenChange, act }) {
                     <Textarea placeholder="Act description" {...field} />
                   </FormControl>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="is_live"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>
+                      Live Act
+                    </FormLabel>
+                    <p className="text-sm text-muted-foreground">
+                      Mark this act as a LIVE performance
+                    </p>
+                  </div>
                 </FormItem>
               )}
             />

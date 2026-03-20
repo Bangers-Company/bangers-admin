@@ -1,20 +1,21 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router'
-import { 
-  DndContext, 
-  DragOverlay, 
-  closestCorners, 
-  KeyboardSensor, 
-  PointerSensor, 
-  useSensor, 
-  useSensors, 
-  defaultDropAnimationSideEffects 
+import {
+  DndContext,
+  DragOverlay,
+  closestCorners,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  defaultDropAnimationSideEffects,
+  useDndContext
 } from '@dnd-kit/core'
-import { 
-  SortableContext, 
-  arrayMove, 
+import {
+  SortableContext,
+  arrayMove,
   sortableKeyboardCoordinates,
-  verticalListSortingStrategy 
+  verticalListSortingStrategy
 } from '@dnd-kit/sortable'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -42,6 +43,7 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Loader2, ArrowLeft, Save, Plus } from 'lucide-react'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 
 // Random ID generator for items
 function generateId() {
@@ -60,18 +62,21 @@ function AddActModal({ open, onOpenChange, onAdd }) {
           <DialogTitle>Add Act to Line-up (Uncategorized)</DialogTitle>
         </DialogHeader>
         <Command shouldFilter={false} className="border rounded-md">
-          <CommandInput 
-            placeholder="Search all acts..." 
-            value={search} 
-            onValueChange={setSearch} 
+          <CommandInput
+            placeholder="Search all acts..."
+            value={search}
+            onValueChange={setSearch}
           />
           <CommandList className="max-h-[300px] overflow-y-auto">
             <CommandEmpty>No acts found.</CommandEmpty>
             <CommandGroup>
               {allActs.map(act => (
                 <CommandItem key={act.id} onSelect={() => onAdd(act)}>
-                  <div className="flex flex-col">
-                    <span className="font-medium">{act.name}</span>
+                  <div className="flex flex-col gap-1 w-full">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-medium">{act.name}</span>
+                      {act.is_live && <Badge variant="destructive" className="h-4 px-1 text-[8px] uppercase font-bold tracking-wider leading-none">Live</Badge>}
+                    </div>
                     {act.artists?.length > 0 && (
                       <span className="text-xs text-muted-foreground">
                         {act.artists.map(a => a.name).join(', ')}
@@ -111,7 +116,10 @@ function SortableActItem({ item }) {
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
       <Card className="shadow-sm border-l-4 border-l-primary hover:bg-muted/30 transition-colors mb-2">
         <CardHeader className="p-2 space-y-1">
-          <CardTitle className="text-sm font-bold leading-none">{item.name}</CardTitle>
+          <CardTitle className="text-sm font-bold leading-none flex items-center gap-1.5 flex-wrap">
+            <span>{item.name}</span>
+            {item.is_live && <Badge variant="destructive" className="h-4 px-1 text-[8px] uppercase font-bold tracking-wider leading-none">Live</Badge>}
+          </CardTitle>
           <div className="flex flex-wrap gap-1">
             {item.artists?.map(artist => (
               <Badge key={artist.id} variant="secondary" className="text-[10px] h-4 px-1.5 py-0 font-normal">
@@ -128,16 +136,22 @@ function SortableActItem({ item }) {
 import { useDroppable } from '@dnd-kit/core'
 
 function DroppableColumn({ col, children }) {
+  const { active } = useDndContext()
   const data = useMemo(() => ({ type: 'Column', col }), [col])
-  const { setNodeRef } = useDroppable({
+  const { setNodeRef, isOver } = useDroppable({
     id: col.id,
     data
   })
 
+  const isActDragging = active?.data?.current?.type === 'Act'
+
   return (
-    <div 
+    <div
       ref={setNodeRef}
-      className="flex flex-col w-[300px] shrink-0 h-[600px] bg-muted/20 rounded-md border p-3 flex-1"
+      className={cn(
+        "flex flex-col w-[300px] shrink-0 h-[600px] rounded-md border p-3 flex-1 transition-all duration-200",
+        isOver && isActDragging ? "bg-primary/20 ring-4 ring-inset ring-primary/40 shadow-[inset_0_0_40px_rgba(var(--primary-rgb),0.1)] border-primary" : "bg-muted/20"
+      )}
     >
       <div className="mb-4 shrink-0">
         <h3 className="text-lg font-bold tracking-tight text-primary uppercase line-clamp-1">
@@ -147,9 +161,15 @@ function DroppableColumn({ col, children }) {
           {col.description}
         </p>
       </div>
-      
+
       <div className="flex-1 overflow-y-auto pr-1 pb-10">
         {children}
+        {isOver && isActDragging && (
+          <div className="h-16 border-2 border-dashed border-primary bg-primary/10 rounded-md animate-pulse mt-2 flex flex-col items-center justify-center gap-1">
+            <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+            <span className="text-[10px] font-black text-primary uppercase tracking-tighter">Drop at end</span>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -159,7 +179,10 @@ function ActItemOverlay({ item }) {
   return (
     <Card className="shadow-lg border-l-4 border-l-primary bg-background/90 opacity-80 rotate-2 scale-105 cursor-grabbing mb-2">
       <CardHeader className="p-2 space-y-1">
-        <CardTitle className="text-sm font-bold leading-none">{item.name}</CardTitle>
+        <CardTitle className="text-sm font-bold leading-none flex items-center gap-1.5 flex-wrap">
+          <span>{item.name}</span>
+          {item.is_live && <Badge variant="destructive" className="h-4 px-1 text-[8px] uppercase font-bold tracking-wider leading-none">Live</Badge>}
+        </CardTitle>
         <div className="flex flex-wrap gap-1">
           {item.artists?.map(artist => (
             <Badge key={artist.id} variant="secondary" className="text-[10px] h-4 px-1.5 py-0 font-normal">
@@ -177,7 +200,7 @@ export default function EventLineupEditPage() {
   const navigate = useNavigate()
   const { data: response, isLoading: isEventLoading } = useEvent(id)
   const syncLineup = useSyncEventLineup()
-  
+
   const event = response?.data
 
   const [columns, setColumns] = useState({})
@@ -210,10 +233,9 @@ export default function EventLineupEditPage() {
   // Initialize columns and items
   useEffect(() => {
     if (!event || isInitialized) return
-    // ...
 
     const initialColumns = {}
-    
+
     // 1. Uncategorized Column
     initialColumns['uncategorized'] = {
       id: 'uncategorized',
@@ -226,7 +248,7 @@ export default function EventLineupEditPage() {
 
     // 2. Day/Stage Columns
     const stages = event.stages || []
-    
+
     let start = new Date(event.start_date)
     let end = new Date(event.end_date)
     const dayList = []
@@ -239,7 +261,7 @@ export default function EventLineupEditPage() {
     dayList.forEach(day => {
       const dateObj = new Date(day)
       const dateStr = dateObj.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })
-      
+
       stages.forEach(stage => {
         const colId = `${stage.id}_${day}`
         initialColumns[colId] = {
@@ -258,7 +280,7 @@ export default function EventLineupEditPage() {
     acts.forEach(act => {
       const item = { ...act, dragId: generateId() }
       const colId = (act.stage_id && act.date) ? `${act.stage_id}_${act.date}` : null
-      
+
       if (colId && initialColumns[colId]) {
         initialColumns[colId].items.push(item)
       } else {
@@ -284,7 +306,7 @@ export default function EventLineupEditPage() {
 
   const handleAddAct = (act) => {
     // Check if the act already exists in ANY column (we only check the original id, not dragId)
-    const existingCol = Object.values(columns).find(col => 
+    const existingCol = Object.values(columns).find(col =>
       col.items.some(i => i.id === act.id)
     )
     if (existingCol) {
@@ -293,7 +315,7 @@ export default function EventLineupEditPage() {
     }
 
     const newItem = { ...act, dragId: generateId() }
-    
+
     setColumns(prev => ({
       ...prev,
       uncategorized: {
@@ -301,7 +323,7 @@ export default function EventLineupEditPage() {
         items: [...prev.uncategorized.items, newItem]
       }
     }))
-    
+
     toast.success(`Added ${act.name} to Uncategorized`)
   }
 
@@ -315,7 +337,7 @@ export default function EventLineupEditPage() {
   }
 
   const findColumnOfItem = (itemId) => {
-    return Object.keys(columns).find(colId => 
+    return Object.keys(columns).find(colId =>
       columns[colId].items.some(item => item.dragId === itemId)
     )
   }
@@ -327,9 +349,9 @@ export default function EventLineupEditPage() {
     setColumns(prev => {
       const activeId = active.id
       const overId = over.id
-      
+
       const findCol = (id) => Object.keys(prev).find(c => prev[c].items.some(i => i.dragId === id))
-      
+
       const activeColumnId = findCol(activeId)
       const overColumnId = prev[overId] ? overId : findCol(overId)
 
@@ -370,9 +392,9 @@ export default function EventLineupEditPage() {
     setColumns(prev => {
       const activeId = active.id
       const overId = over.id
-      
+
       const findCol = (id) => Object.keys(prev).find(c => prev[c].items.some(i => i.dragId === id))
-      
+
       const activeColumnId = findCol(activeId)
       const overColumnId = prev[overId] ? overId : findCol(overId)
 
@@ -398,7 +420,7 @@ export default function EventLineupEditPage() {
 
   const handleSave = async () => {
     const payloadItems = []
-    
+
     Object.values(columns).forEach(col => {
       col.items.forEach(item => {
         payloadItems.push({
@@ -429,9 +451,9 @@ export default function EventLineupEditPage() {
 
   const renderColumn = (col) => (
     <DroppableColumn key={col.id} col={col}>
-      <SortableContext 
+      <SortableContext
         id={col.id}
-        items={col.items.map(i => i.dragId)} 
+        items={col.items.map(i => i.dragId)}
         strategy={verticalListSortingStrategy}
       >
         {col.items.map(item => (
@@ -458,7 +480,7 @@ export default function EventLineupEditPage() {
 
   // Split out uncategorized column
   const uncategorizedCol = columns['uncategorized']
-  
+
   // Filter columns to only show the currently selected day
   const visibleStageCols = Object.values(columns).filter(c => c.id !== 'uncategorized' && c.date === selectedDay)
 
@@ -469,8 +491,8 @@ export default function EventLineupEditPage() {
           <Button variant="ghost" size="icon" onClick={() => navigate(`/events/${event.id}/lineup`)}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <PageHeader 
-            title={`Edit Line-up: ${event.name}`} 
+          <PageHeader
+            title={`Edit Line-up: ${event.name}`}
             description="Drag acts to stages, or to Uncategorized to move them between days."
           />
         </div>
@@ -508,7 +530,7 @@ export default function EventLineupEditPage() {
         </div>
       )}
 
-      <DndContext 
+      <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
         onDragStart={handleDragStart}
@@ -516,7 +538,7 @@ export default function EventLineupEditPage() {
         onDragEnd={handleDragEnd}
       >
         <div className="flex-1 overflow-x-auto overflow-y-hidden border rounded-lg bg-card shadow-sm flex relative">
-          
+
           {/* Main timeline scroller for the selected day */}
           <div className="flex gap-4 p-4 min-w-max h-full">
             {visibleStageCols.map(renderColumn)}
@@ -524,7 +546,7 @@ export default function EventLineupEditPage() {
 
           {/* Sticky Uncategorized sidebar */}
           <div className="sticky right-0 top-0 h-full p-4 bg-background border-l shadow-2xl z-10 w-[332px] shrink-0">
-             {uncategorizedCol && renderColumn(uncategorizedCol)}
+            {uncategorizedCol && renderColumn(uncategorizedCol)}
           </div>
 
         </div>

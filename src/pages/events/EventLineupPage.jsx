@@ -86,14 +86,16 @@ export default function EventLineupPage() {
           <Button variant="ghost" size="icon" onClick={() => navigate('/events')}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <PageHeader 
-            title={`Line-up: ${event.name}`} 
+          <PageHeader
+            title={`Line-up: ${event.name}`}
             description={`${event.location} • ${new Date(event.start_date).toLocaleDateString()}`}
           />
         </div>
-        <Button onClick={() => navigate(`/events/${event.id}/lineup/edit`)}>
-          Edit Lineup
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => navigate(`/events/${event.id}/lineup/edit`)}>
+            Edit Lineup
+          </Button>
+        </div>
       </div>
 
       {days.length > 1 && (
@@ -104,8 +106,8 @@ export default function EventLineupPage() {
               const dayName = dateObj.toLocaleDateString(undefined, { weekday: 'long' })
               const dateStr = dateObj.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
               return (
-                <TabsTrigger 
-                  key={day} 
+                <TabsTrigger
+                  key={day}
                   value={day}
                   className="flex-1 px-6 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
                 >
@@ -132,7 +134,7 @@ export default function EventLineupPage() {
                   {column.description || 'No description'}
                 </p>
               </div>
-              
+
               <div className="space-y-2">
                 {column.acts.length === 0 ? (
                   <p className="text-sm text-muted-foreground italic px-1">No acts assigned yet.</p>
@@ -140,7 +142,10 @@ export default function EventLineupPage() {
                   column.acts.map((act) => (
                     <Card key={act.id} className="shadow-sm border-l-4 border-l-primary hover:bg-muted/30 transition-colors">
                       <CardHeader className="p-1 px-2 space-y-0.5">
-                        <CardTitle className="text-[11px] font-bold leading-none">{act.name}</CardTitle>
+                        <CardTitle className="text-[11px] font-bold leading-none flex items-center gap-1.5 flex-wrap">
+                          <span>{act.name}</span>
+                          {act.is_live && <Badge variant="destructive" className="h-4 px-1 text-[8px] uppercase font-bold tracking-wider leading-none">Live</Badge>}
+                        </CardTitle>
                         <div className="flex flex-wrap gap-1">
                           {act.artists?.map(artist => (
                             <Badge key={artist.id} variant="secondary" className="text-[9px] h-3.5 px-1 py-0 font-normal">
@@ -172,7 +177,10 @@ export default function EventLineupPage() {
                 {uncategorizedActs.map((act) => (
                   <Card key={act.id} className="shadow-sm border-l-4 border-l-destructive hover:bg-muted/30 transition-colors">
                     <CardHeader className="p-1 px-2 space-y-0.5">
-                      <CardTitle className="text-[11px] font-bold leading-none">{act.name}</CardTitle>
+                      <CardTitle className="text-[11px] font-bold leading-none flex items-center gap-1.5 flex-wrap">
+                        <span>{act.name}</span>
+                        {act.is_live && <Badge variant="destructive" className="h-4 px-1 text-[8px] uppercase font-bold tracking-wider leading-none">Live</Badge>}
+                      </CardTitle>
                       <div className="flex flex-wrap gap-1">
                         {act.artists?.map(artist => (
                           <Badge key={artist.id} variant="secondary" className="text-[9px] h-3.5 px-1 py-0 font-normal">
