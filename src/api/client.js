@@ -8,7 +8,7 @@ class ApiError extends Error {
   }
 }
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1'
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/admin/v1'
 
 async function handleResponse(response, options = {}) {
   if (response.status === 204) {
@@ -62,9 +62,7 @@ function buildHeaders(isFormData = false) {
 }
 
 function buildUrl(path, params = {}) {
-  const needsAdmin = !path.startsWith('/auth') && !path.startsWith('/mobile') && !path.startsWith('/admin')
-  const prefix = needsAdmin ? '/admin' : ''
-  const url = new URL(`${BASE_URL}${prefix}${path}`)
+  const url = new URL(`${BASE_URL}${path}`)
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
       url.searchParams.append(key, value)
@@ -100,6 +98,15 @@ export const apiClient = {
     return handleResponse(response, options)
   },
 
+  async patch(path, body, options = {}) {
+    const response = await fetch(buildUrl(path), {
+      method: 'PATCH',
+      headers: buildHeaders(),
+      body: JSON.stringify(body),
+    })
+    return handleResponse(response, options)
+  },
+
   async del(path, body, options = {}) {
     const fetchOptions = {
       method: 'DELETE',
@@ -110,6 +117,10 @@ export const apiClient = {
     }
     const response = await fetch(buildUrl(path), fetchOptions)
     return handleResponse(response, options)
+  },
+
+  async delete(path, body, options = {}) {
+    return this.del(path, body, options)
   },
 
   async upload(path, formData, options = {}) {
